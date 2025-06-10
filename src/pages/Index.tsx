@@ -19,6 +19,10 @@ const Index = () => {
     navigate('/auth');
   };
 
+  const handleDashboardClick = () => {
+    navigate('/dashboard');
+  };
+
   const featuredMagazines = [
     {
       id: 1,
@@ -83,6 +87,9 @@ const Index = () => {
               </Button>
               {user ? (
                 <div className="flex items-center space-x-2">
+                  <Button variant="outline" onClick={handleDashboardClick}>
+                    Dashboard
+                  </Button>
                   <span className="text-sm text-muted-foreground">
                     Welcome, {user.email}
                   </span>

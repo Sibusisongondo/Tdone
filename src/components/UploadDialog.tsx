@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UploadFormData {
   title: string;
@@ -20,7 +22,9 @@ interface UploadFormData {
 const UploadDialog = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const form = useForm<UploadFormData>({
     defaultValues: {
@@ -57,19 +61,72 @@ const UploadDialog = () => {
     if (fileInput) fileInput.value = "";
   };
 
-  const onSubmit = (data: UploadFormData) => {
-    console.log("Upload data:", data);
-    console.log("Selected file:", selectedFile);
-    
-    toast({
-      title: "Magazine uploaded successfully!",
-      description: `"${data.title}" has been added to the ${data.category} category.`,
-    });
-    
-    // Reset form and close dialog
-    form.reset();
-    setSelectedFile(null);
-    setIsOpen(false);
+  const onSubmit = async (data: UploadFormData) => {
+    if (!user || !selectedFile) {
+      toast({
+        title: "Error",
+        description: "Please make sure you're logged in and have selected a file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Upload file to storage
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError, data: uploadData } = await supabase.storage
+        .from('magazines')
+        .upload(fileName, selectedFile);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get the public URL for the uploaded file
+      const { data: urlData } = supabase.storage
+        .from('magazines')
+        .getPublicUrl(fileName);
+
+      // Save magazine metadata to database
+      const { error: dbError } = await supabase
+        .from('magazines')
+        .insert({
+          user_id: user.id,
+          title: data.title,
+          description: data.description,
+          category: data.category,
+          file_name: selectedFile.name,
+          file_size: selectedFile.size,
+          file_url: urlData.publicUrl,
+        });
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      toast({
+        title: "Magazine uploaded successfully!",
+        description: `"${data.title}" has been added to the ${data.category} category.`,
+      });
+      
+      // Reset form and close dialog
+      form.reset();
+      setSelectedFile(null);
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "There was an error uploading your magazine. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -195,8 +252,8 @@ const UploadDialog = () => {
               <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={!selectedFile}>
-                Upload Magazine
+              <Button type="submit" disabled={!selectedFile || isUploading}>
+                {isUploading ? "Uploading..." : "Upload Magazine"}
               </Button>
             </div>
           </form>
