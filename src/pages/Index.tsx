@@ -2,10 +2,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, BookOpen, Bookmark, TrendingUp, Users, Star } from "lucide-react";
+import { Search, BookOpen, Bookmark, TrendingUp, Users, Star, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import UploadDialog from "@/components/UploadDialog";
 
 const Index = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  const handleAuthClick = () => {
+    navigate('/auth');
+  };
+
   const featuredMagazines = [
     {
       id: 1,
@@ -64,11 +77,23 @@ const Index = () => {
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors">About</a>
             </nav>
             <div className="flex items-center space-x-4">
-              <UploadDialog />
+              {user && <UploadDialog />}
               <Button variant="ghost" size="icon">
                 <Bookmark className="h-5 w-5" />
               </Button>
-              <Button>Sign In</Button>
+              {user ? (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-muted-foreground">
+                    Welcome, {user.email}
+                  </span>
+                  <Button variant="outline" onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <Button onClick={handleAuthClick}>Sign In</Button>
+              )}
             </div>
           </div>
         </div>
