@@ -32,11 +32,28 @@ const Auth = () => {
       }
 
       if (result.error) {
-        toast({
-          title: "Error",
-          description: result.error.message,
-          variant: "destructive",
-        });
+        console.log('Auth error:', result.error);
+        
+        // Handle specific error cases
+        if (result.error.message === 'Email not confirmed') {
+          toast({
+            title: "Email confirmation required",
+            description: "Please check your email and click the confirmation link before signing in.",
+            variant: "destructive",
+          });
+        } else if (result.error.message === 'Invalid login credentials') {
+          toast({
+            title: "Invalid credentials",
+            description: "Please check your email and password and try again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: result.error.message,
+            variant: "destructive",
+          });
+        }
       } else {
         if (isLogin) {
           toast({
@@ -47,11 +64,13 @@ const Auth = () => {
         } else {
           toast({
             title: "Success",
-            description: "Account created! Please check your email to verify your account.",
+            description: "Account created! Please check your email to verify your account before signing in.",
           });
+          setIsLogin(true); // Switch to login form
         }
       }
     } catch (error) {
+      console.error('Unexpected error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred.",
@@ -140,6 +159,14 @@ const Auth = () => {
                 }
               </Button>
             </div>
+            
+            {isLogin && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> If you're testing, you can disable email confirmation in your Supabase dashboard under Authentication → Settings to speed up the login process.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
