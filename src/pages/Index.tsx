@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -5,14 +6,6 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Download, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { Share, Copy, Check } from "lucide-react"
 import ShareButton from "@/components/ShareButton";
 
 interface Magazine {
@@ -29,8 +22,8 @@ interface Magazine {
   is_downloadable: boolean | null;
   is_readable_online: boolean | null;
   profiles?: {
-    artist_name: string;
-  };
+    artist_name: string | null;
+  } | null;
 }
 
 const Index = () => {
@@ -53,7 +46,12 @@ const Index = () => {
     try {
       const { data, error } = await supabase
         .from('magazines')
-        .select('*, profiles(artist_name)')
+        .select(`
+          *,
+          profiles!magazines_user_id_fkey (
+            artist_name
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -84,20 +82,17 @@ const Index = () => {
       }
 
       const { data: usersCount, error: usersError } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact' });
+        .rpc('get_registered_users_count');
 
       if (usersError) {
         throw usersError;
       }
 
-      // Assuming you have a categories table or a way to count categories
-      // Replace this with your actual logic to fetch the number of categories
       const totalCategories = 5;
 
       setStats({
         totalMagazines: magazinesCount?.length || 0,
-        registeredUsers: usersCount?.length || 0,
+        registeredUsers: usersCount || 0,
         totalCategories: totalCategories,
       });
     } catch (error) {
