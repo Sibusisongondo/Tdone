@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, LogOut, FileText, Trash2, Calendar, Users } from "lucide-react";
+import { BookOpen, LogOut, FileText, Trash2, Calendar, Users, Download, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -18,7 +18,10 @@ interface Magazine {
   file_name: string;
   file_size: number | null;
   file_url: string | null;
+  cover_image_url: string | null;
   created_at: string;
+  is_downloadable: boolean | null;
+  is_readable_online: boolean | null;
 }
 
 const Dashboard = () => {
@@ -102,6 +105,26 @@ const Dashboard = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleMagazineAction = (magazine: Magazine) => {
+    if (magazine.is_readable_online && magazine.file_url) {
+      navigate(`/magazine/${magazine.id}`);
+    } else if (magazine.is_downloadable && magazine.file_url) {
+      window.open(magazine.file_url, '_blank');
+    }
+  };
+
+  const getActionButtonText = (magazine: Magazine) => {
+    if (magazine.is_readable_online) return "Read Online";
+    if (magazine.is_downloadable) return "Download";
+    return "View";
+  };
+
+  const getActionIcon = (magazine: Magazine) => {
+    if (magazine.is_readable_online) return <Eye className="h-4 w-4" />;
+    if (magazine.is_downloadable) return <Download className="h-4 w-4" />;
+    return <FileText className="h-4 w-4" />;
   };
 
   const formatFileSize = (bytes: number | null) => {
@@ -216,6 +239,18 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {magazines.map((magazine) => (
                   <Card key={magazine.id} className="hover:shadow-md transition-shadow">
+                    {/* Cover Image */}
+                    <div className="aspect-video overflow-hidden bg-muted/30 flex items-center justify-center">
+                      {magazine.cover_image_url ? (
+                        <img 
+                          src={magazine.cover_image_url} 
+                          alt={magazine.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <BookOpen className="h-12 w-12 text-muted-foreground" />
+                      )}
+                    </div>
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <Badge variant="secondary">{magazine.category}</Badge>
@@ -245,6 +280,18 @@ const Dashboard = () => {
                           <span>Uploaded:</span>
                           <span>{formatDate(magazine.created_at)}</span>
                         </div>
+                        <div className="flex items-center justify-between">
+                          <span>Readable online:</span>
+                          <Badge variant={magazine.is_readable_online ? "default" : "secondary"} className="text-xs">
+                            {magazine.is_readable_online ? "Yes" : "No"}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Downloadable:</span>
+                          <Badge variant={magazine.is_downloadable ? "default" : "secondary"} className="text-xs">
+                            {magazine.is_downloadable ? "Yes" : "No"}
+                          </Badge>
+                        </div>
                       </div>
                       {magazine.file_url && (
                         <div className="mt-4">
@@ -252,9 +299,10 @@ const Dashboard = () => {
                             variant="outline" 
                             size="sm" 
                             className="w-full"
-                            onClick={() => window.open(magazine.file_url!, '_blank')}
+                            onClick={() => handleMagazineAction(magazine)}
                           >
-                            View Magazine
+                            {getActionIcon(magazine)}
+                            <span className="ml-2">{getActionButtonText(magazine)}</span>
                           </Button>
                         </div>
                       )}

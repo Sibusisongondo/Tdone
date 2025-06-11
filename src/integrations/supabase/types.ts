@@ -12,36 +12,45 @@ export type Database = {
       magazines: {
         Row: {
           category: string
+          cover_image_url: string | null
           created_at: string
           description: string | null
           file_name: string
           file_size: number | null
           file_url: string | null
           id: string
+          is_downloadable: boolean | null
+          is_readable_online: boolean | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
           category: string
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           file_name: string
           file_size?: number | null
           file_url?: string | null
           id?: string
+          is_downloadable?: boolean | null
+          is_readable_online?: boolean | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
           category?: string
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           file_name?: string
           file_size?: number | null
           file_url?: string | null
           id?: string
+          is_downloadable?: boolean | null
+          is_readable_online?: boolean | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -50,28 +59,40 @@ export type Database = {
       }
       profiles: {
         Row: {
+          artist_name: string | null
           avatar_url: string | null
+          bio: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           id: string
+          social_links: Json | null
           updated_at: string | null
+          website: string | null
         }
         Insert: {
+          artist_name?: string | null
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          social_links?: Json | null
           updated_at?: string | null
+          website?: string | null
         }
         Update: {
+          artist_name?: string | null
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          social_links?: Json | null
           updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -80,7 +101,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_registered_users_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

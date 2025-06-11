@@ -19,8 +19,11 @@ interface Magazine {
   file_name: string;
   file_size: number | null;
   file_url: string | null;
+  cover_image_url: string | null;
   created_at: string;
   user_id: string;
+  is_downloadable: boolean | null;
+  is_readable_online: boolean | null;
 }
 
 const Index = () => {
@@ -55,6 +58,21 @@ const Index = () => {
       }
 
       return data || [];
+    },
+  });
+
+  // Fetch registered users count
+  const { data: registeredUsersCount = 0 } = useQuery({
+    queryKey: ['registered-users-count'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_registered_users_count');
+      
+      if (error) {
+        console.error('Error fetching registered users count:', error);
+        return 0;
+      }
+      
+      return data || 0;
     },
   });
 
@@ -93,6 +111,22 @@ const Index = () => {
   const formatFileSize = (bytes: number | null) => {
     if (!bytes) return 'Unknown size';
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  };
+
+  const handleMagazineAction = (magazine: Magazine) => {
+    if (magazine.is_readable_online && magazine.file_url) {
+      // Navigate to PDF viewer
+      navigate(`/magazine/${magazine.id}`);
+    } else if (magazine.is_downloadable && magazine.file_url) {
+      // Download the file
+      window.open(magazine.file_url, '_blank');
+    }
+  };
+
+  const getActionButtonText = (magazine: Magazine) => {
+    if (magazine.is_readable_online) return "Read Online";
+    if (magazine.is_downloadable) return "Download";
+    return "View";
   };
 
   return (
@@ -219,9 +253,9 @@ const Index = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-center">
                 <Users className="h-6 w-6 md:h-8 md:w-8 text-primary mr-2" />
-                <span className="text-2xl md:text-3xl font-bold">50K+</span>
+                <span className="text-2xl md:text-3xl font-bold">{registeredUsersCount}+</span>
               </div>
-              <p className="text-muted-foreground text-sm md:text-base">Active Readers</p>
+              <p className="text-muted-foreground text-sm md:text-base">Registered Artists</p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-center">
@@ -269,7 +303,15 @@ const Index = () => {
               {magazines.slice(0, 6).map((magazine) => (
                 <Card key={magazine.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="aspect-video overflow-hidden bg-muted/30 flex items-center justify-center">
-                    <BookOpen className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground" />
+                    {magazine.cover_image_url ? (
+                      <img 
+                        src={magazine.cover_image_url} 
+                        alt={magazine.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <BookOpen className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground" />
+                    )}
                   </div>
                   <CardHeader className="p-4 md:p-6">
                     <div className="flex items-center justify-between mb-2">
@@ -292,10 +334,10 @@ const Index = () => {
                       {magazine.file_url && (
                         <Button 
                           size="sm" 
-                          onClick={() => window.open(magazine.file_url!, '_blank')}
+                          onClick={() => handleMagazineAction(magazine)}
                           className="text-xs px-3 py-1"
                         >
-                          Read Now
+                          {getActionButtonText(magazine)}
                         </Button>
                       )}
                     </div>
@@ -327,7 +369,6 @@ const Index = () => {
         </section>
       )}
 
-      {/* Trending Section */}
       {magazines.length > 0 && (
         <section className="py-8 md:py-16" id="trending">
           <div className="container mx-auto px-4">
@@ -360,7 +401,6 @@ const Index = () => {
         </section>
       )}
 
-      {/* Footer */}
       <footer className="bg-card border-t py-8 md:py-12" id="about">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:gap-8">

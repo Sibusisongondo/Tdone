@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Upload, FileText, X, Image } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,10 +18,14 @@ interface UploadFormData {
   description: string;
   category: string;
   file: FileList | null;
+  coverImage: FileList | null;
+  isDownloadable: boolean;
+  isReadableOnline: boolean;
 }
 
 const UploadDialog = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedCoverImage, setSelectedCoverImage] = useState<File | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
@@ -32,6 +37,9 @@ const UploadDialog = () => {
       description: "",
       category: "",
       file: null,
+      coverImage: null,
+      isDownloadable: true,
+      isReadableOnline: true,
     },
   });
 
@@ -54,11 +62,35 @@ const UploadDialog = () => {
     }
   };
 
+  const handleCoverImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith("image/")) {
+        setSelectedCoverImage(file);
+        form.setValue("coverImage", event.target.files);
+      } else {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file.",
+          variant: "destructive",
+        });
+        event.target.value = "";
+      }
+    }
+  };
+
   const removeFile = () => {
     setSelectedFile(null);
     form.setValue("file", null);
     const fileInput = document.getElementById("pdf-upload") as HTMLInputElement;
     if (fileInput) fileInput.value = "";
+  };
+
+  const removeCoverImage = () => {
+    setSelectedCoverImage(null);
+    form.setValue("coverImage", null);
+    const coverInput = document.getElementById("cover-upload") as HTMLInputElement;
+    if (coverInput) coverInput.value = "";
   };
 
   const onSubmit = async (data: UploadFormData) => {
@@ -74,11 +106,11 @@ const UploadDialog = () => {
     setIsUploading(true);
 
     try {
-      // Upload file to storage
+      // Upload PDF file to storage
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('magazines')
         .upload(fileName, selectedFile);
 
@@ -86,10 +118,31 @@ const UploadDialog = () => {
         throw uploadError;
       }
 
-      // Get the public URL for the uploaded file
+      // Get the public URL for the uploaded PDF
       const { data: urlData } = supabase.storage
         .from('magazines')
         .getPublicUrl(fileName);
+
+      let coverImageUrl = null;
+
+      // Upload cover image if provided
+      if (selectedCoverImage) {
+        const coverExt = selectedCoverImage.name.split('.').pop();
+        const coverFileName = `covers/${user.id}/${Date.now()}.${coverExt}`;
+        
+        const { error: coverUploadError } = await supabase.storage
+          .from('magazines')
+          .upload(coverFileName, selectedCoverImage);
+
+        if (coverUploadError) {
+          console.error('Cover image upload error:', coverUploadError);
+        } else {
+          const { data: coverUrlData } = supabase.storage
+            .from('magazines')
+            .getPublicUrl(coverFileName);
+          coverImageUrl = coverUrlData.publicUrl;
+        }
+      }
 
       // Save magazine metadata to database
       const { error: dbError } = await supabase
@@ -102,6 +155,9 @@ const UploadDialog = () => {
           file_name: selectedFile.name,
           file_size: selectedFile.size,
           file_url: urlData.publicUrl,
+          cover_image_url: coverImageUrl,
+          is_downloadable: data.isDownloadable,
+          is_readable_online: data.isReadableOnline,
         });
 
       if (dbError) {
@@ -116,6 +172,7 @@ const UploadDialog = () => {
       // Reset form and close dialog
       form.reset();
       setSelectedFile(null);
+      setSelectedCoverImage(null);
       setIsOpen(false);
     } catch (error) {
       console.error('Upload error:', error);
@@ -137,7 +194,7 @@ const UploadDialog = () => {
           <span>Upload Magazine</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Upload New Magazine</DialogTitle>
           <DialogDescription>
@@ -201,6 +258,55 @@ const UploadDialog = () => {
               )}
             />
 
+            {/* Cover Image Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="cover-upload">Cover Image (Optional)</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center">
+                {selectedCoverImage ? (
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-md">
+                    <div className="flex items-center space-x-2">
+                      <Image className="h-5 w-5 text-green-500" />
+                      <span className="text-sm font-medium">{selectedCoverImage.name}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {(selectedCoverImage.size / (1024 * 1024)).toFixed(2)} MB
+                      </Badge>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={removeCoverImage}
+                      className="h-8 w-8 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <Image className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Upload a cover image for your magazine
+                    </p>
+                    <Input
+                      id="cover-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCoverImageChange}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById("cover-upload")?.click()}
+                    >
+                      Choose Image
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* PDF Upload */}
             <div className="space-y-2">
               <Label htmlFor="pdf-upload">PDF File</Label>
               <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
@@ -245,6 +351,57 @@ const UploadDialog = () => {
                     </Button>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Reading Options */}
+            <div className="space-y-4">
+              <Label>Reading Options</Label>
+              <div className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="isReadableOnline"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Allow online reading
+                        </FormLabel>
+                        <p className="text-xs text-muted-foreground">
+                          Users can read the magazine directly on the website
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="isDownloadable"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Allow downloads
+                        </FormLabel>
+                        <p className="text-xs text-muted-foreground">
+                          Users can download the PDF file
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
