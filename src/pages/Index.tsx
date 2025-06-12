@@ -47,7 +47,18 @@ const Index = () => {
       const { data, error } = await supabase
         .from('magazines')
         .select(`
-          *,
+          id,
+          title,
+          description,
+          category,
+          file_name,
+          file_size,
+          file_url,
+          cover_image_url,
+          created_at,
+          user_id,
+          is_downloadable,
+          is_readable_online,
           profiles (
             artist_name
           )
@@ -60,7 +71,7 @@ const Index = () => {
       }
 
       console.log('Fetched magazines:', data);
-      setMagazines(data || []);
+      setMagazines(data as Magazine[] || []);
     } catch (error) {
       console.error('Error fetching magazines:', error);
       toast({
