@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,9 +55,11 @@ const Index = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
+        console.error('Supabase error:', error);
         throw error;
       }
 
+      console.log('Fetched magazines:', data);
       setMagazines(data || []);
     } catch (error) {
       console.error('Error fetching magazines:', error);
@@ -206,7 +209,12 @@ const Index = () => {
             </p>
           </div>
 
-          {magazines.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <BookOpen className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
+              <p className="text-muted-foreground">Loading magazines...</p>
+            </div>
+          ) : magazines.length === 0 ? (
             <div className="text-center py-12">
               <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No magazines yet</h3>
