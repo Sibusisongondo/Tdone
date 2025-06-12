@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,7 +47,7 @@ const Index = () => {
         .from('magazines')
         .select(`
           *,
-          profiles!magazines_user_id_fkey (
+          profiles (
             artist_name
           )
         `)
