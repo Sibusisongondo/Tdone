@@ -201,7 +201,7 @@ const Index = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/magazines')}
                 className="btn-modern px-8 py-6 text-base sm:text-lg h-auto border-2"
               >
                 Explore Magazines

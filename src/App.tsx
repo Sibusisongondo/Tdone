@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import Magazines from "./pages/Magazines";
 import MagazineViewer from "./pages/MagazineViewer";
 import ArtistProfile from "./pages/ArtistProfile";
 import NotFound from "./pages/NotFound";
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/magazines" element={<Magazines />} />
               <Route path="/magazine/:id" element={<MagazineViewer />} />
               <Route path="/artist/:artistId" element={<ArtistProfile />} />
               <Route path="/artist/:artistId/magazine/:magazineId" element={<ArtistProfile />} />

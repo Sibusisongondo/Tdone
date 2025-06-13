@@ -1,0 +1,248 @@
+
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { BookOpen, Download, Eye, ArrowLeft } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import ShareButton from "@/components/ShareButton";
+
+interface Magazine {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  file_name: string;
+  file_size: number | null;
+  file_url: string | null;
+  cover_image_url: string | null;
+  created_at: string;
+  user_id: string;
+  is_downloadable: boolean | null;
+  is_readable_online: boolean | null;
+  profiles?: {
+    artist_name: string | null;
+  } | null;
+}
+
+const Magazines = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [magazines, setMagazines] = useState<Magazine[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMagazines();
+  }, []);
+
+  const fetchMagazines = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('magazines')
+        .select(`
+          id,
+          title,
+          description,
+          category,
+          file_name,
+          file_size,
+          file_url,
+          cover_image_url,
+          created_at,
+          user_id,
+          is_downloadable,
+          is_readable_online,
+          profiles (
+            artist_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Fetched magazines:', data);
+      setMagazines(data as Magazine[] || []);
+    } catch (error) {
+      console.error('Error fetching magazines:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load magazines.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMagazineAction = (magazine: Magazine, action: 'view' | 'download') => {
+    if (action === 'view' && magazine.is_readable_online) {
+      navigate(`/magazine/${magazine.id}`);
+    } else if (action === 'download' && magazine.is_downloadable && magazine.file_url) {
+      window.open(magazine.file_url, '_blank');
+    } else {
+      toast({
+        title: "Action Not Available",
+        description: `This magazine is not available for ${action === 'view' ? 'online reading' : 'download'}.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const navigateToArtist = (artistId: string) => {
+    navigate(`/artist/${artistId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <BookOpen className="h-16 w-16 text-primary mx-auto animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-4 bg-muted rounded w-32 mx-auto animate-pulse" />
+            <div className="h-3 bg-muted/60 rounded w-24 mx-auto animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+      {/* Header */}
+      <header className="glass sticky top-0 z-50 border-b border-border/50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" onClick={() => navigate('/')} className="flex items-center space-x-2">
+                <ArrowLeft className="h-5 w-5" />
+                <span>Back to Home</span>
+              </Button>
+              <div className="flex items-center space-x-3">
+                <BookOpen className="h-8 w-8 text-primary" />
+                <h1 className="text-xl sm:text-2xl font-bold text-primary">Be Inspired</h1>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <ThemeToggle />
+              <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')} className="btn-modern">
+                Dashboard
+              </Button>
+              <Button onClick={() => navigate('/auth')} className="btn-modern bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                Sign Up
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center mb-12 space-y-4">
+          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-primary via-primary/80 to-secondary bg-clip-text text-transparent">
+            All Magazines
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Discover and explore our complete collection of creative digital magazines
+          </p>
+        </div>
+
+        {magazines.length === 0 ? (
+          <div className="text-center py-16 sm:py-20">
+            <div className="max-w-md mx-auto space-y-6">
+              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 flex items-center justify-center">
+                <BookOpen className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold">No magazines available</h3>
+                <p className="text-muted-foreground">Be the first to upload and share your creative work!</p>
+              </div>
+              <Button 
+                onClick={() => navigate('/auth')}
+                className="btn-modern bg-gradient-to-r from-primary to-primary/80"
+              >
+                Get Started
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {magazines.map((magazine) => (
+              <Card key={magazine.id} className="card-hover glass border-0 overflow-hidden group">
+                <div className="aspect-[3/4] relative overflow-hidden">
+                  {magazine.cover_image_url ? (
+                    <img
+                      src={magazine.cover_image_url}
+                      alt={magazine.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-secondary/20 flex items-center justify-center group-hover:from-primary/30 group-hover:to-secondary/30 transition-all duration-500">
+                      <BookOpen className="h-16 w-16 text-primary/60 group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
+                <CardContent className="p-4 space-y-4">
+                  <h3 className="font-semibold text-base line-clamp-2 group-hover:text-primary transition-colors">
+                    {magazine.title}
+                  </h3>
+                  {magazine.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {magazine.description}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs bg-gradient-to-r from-primary/10 to-primary/5 text-primary px-3 py-1 rounded-full border border-primary/20">
+                      {magazine.category}
+                    </span>
+                    <button 
+                      onClick={() => navigateToArtist(magazine.user_id)}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      by {magazine.profiles?.artist_name || 'Artist'}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {magazine.is_readable_online && (
+                      <Button 
+                        size="sm" 
+                        className="flex-1 btn-modern bg-gradient-to-r from-primary to-primary/80"
+                        onClick={() => handleMagazineAction(magazine, 'view')}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        Read
+                      </Button>
+                    )}
+                    {magazine.is_downloadable && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1 btn-modern"
+                        onClick={() => handleMagazineAction(magazine, 'download')}
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        Download
+                      </Button>
+                    )}
+                    <ShareButton 
+                      magazineId={magazine.id}
+                      artistId={magazine.user_id}
+                      title={magazine.title}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default Magazines;
