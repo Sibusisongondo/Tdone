@@ -162,7 +162,7 @@ const Index = () => {
                 <Sparkles className="h-4 w-4 text-primary/60 absolute -top-1 -right-1 animate-pulse" />
               </div>
               <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                ThizaGraphix
+                Be Inspired
               </h1>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
@@ -367,10 +367,10 @@ const Index = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <BookOpen className="h-6 w-6 text-primary" />
-            <span className="text-lg font-semibold text-primary">ThizaGraphix</span>
+            <span className="text-lg font-semibold text-primary">Be Inspired</span>
           </div>
           <p className="text-muted-foreground text-sm">
-            &copy; {new Date().getFullYear()} ThizaGraphix. All rights reserved.
+            &copy; {new Date().getFullYear()} Be Inspired. All rights reserved.
           </p>
         </div>
       </footer>
