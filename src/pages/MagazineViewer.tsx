@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Download, BookOpen } from "lucide-react";
+import { ArrowLeft, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,7 +18,6 @@ interface Magazine {
   cover_image_url: string | null;
   created_at: string;
   user_id: string;
-  is_downloadable: boolean | null;
   is_readable_online: boolean | null;
 }
 
@@ -73,18 +72,6 @@ const MagazineViewer = () => {
     }
   };
 
-  const handleDownload = () => {
-    if (magazine?.file_url && magazine.is_downloadable) {
-      window.open(magazine.file_url, '_blank');
-    } else {
-      toast({
-        title: "Download Not Available",
-        description: "This magazine is not available for download.",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -122,17 +109,9 @@ const MagazineViewer = () => {
                 Back to Home
               </Button>
               <div className="flex items-center space-x-2">
-                <BookOpen className="h-6 w-6 text-primary" />
-                <h1 className="text-xl font-bold text-primary">ThizaGraphix</h1>
+                <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-6 w-6" />
+                <h1 className="text-xl font-bold text-primary">Be Inspired</h1>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              {magazine.is_downloadable && (
-                <Button variant="outline" onClick={handleDownload}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -158,9 +137,10 @@ const MagazineViewer = () => {
           <CardContent className="p-0">
             {magazine.file_url ? (
               <iframe
-                src={`${magazine.file_url}#toolbar=1&navpanes=1&scrollbar=1`}
+                src={`${magazine.file_url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
                 className="w-full h-[80vh] border-0"
                 title={magazine.title}
+                style={{ minHeight: '600px' }}
               />
             ) : (
               <div className="flex items-center justify-center h-96">

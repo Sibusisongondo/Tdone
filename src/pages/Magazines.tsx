@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -79,15 +78,13 @@ const Magazines = () => {
     }
   };
 
-  const handleMagazineAction = (magazine: Magazine, action: 'view' | 'download') => {
-    if (action === 'view' && magazine.is_readable_online) {
+  const handleMagazineAction = (magazine: Magazine) => {
+    if (magazine.is_readable_online) {
       navigate(`/magazine/${magazine.id}`);
-    } else if (action === 'download' && magazine.is_downloadable && magazine.file_url) {
-      window.open(magazine.file_url, '_blank');
     } else {
       toast({
-        title: "Action Not Available",
-        description: `This magazine is not available for ${action === 'view' ? 'online reading' : 'download'}.`,
+        title: "Not Available",
+        description: "This magazine is not available for online reading.",
         variant: "destructive",
       });
     }
@@ -214,22 +211,10 @@ const Magazines = () => {
                       <Button 
                         size="sm" 
                         className="flex-1 btn-modern bg-gradient-to-r from-primary to-primary/80 text-xs sm:text-sm py-1 sm:py-2"
-                        onClick={() => handleMagazineAction(magazine, 'view')}
+                        onClick={() => handleMagazineAction(magazine)}
                       >
                         <Eye className="h-3 w-3 mr-1" />
                         Read
-                      </Button>
-                    )}
-                    {magazine.is_downloadable && (
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="flex-1 btn-modern text-xs sm:text-sm py-1 sm:py-2"
-                        onClick={() => handleMagazineAction(magazine, 'download')}
-                      >
-                        <Download className="h-3 w-3 mr-1" />
-                        <span className="hidden xs:inline">Download</span>
-                        <span className="xs:hidden">DL</span>
                       </Button>
                     )}
                     <ShareButton 

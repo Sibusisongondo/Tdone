@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, FileText, X, Image } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
@@ -18,8 +18,6 @@ interface UploadFormData {
   category: string;
   file: FileList | null;
   coverImage: FileList | null;
-  isDownloadable: boolean;
-  isReadableOnline: boolean;
 }
 
 interface UploadDialogProps {
@@ -41,8 +39,6 @@ const UploadDialog = ({ triggerButton }: UploadDialogProps) => {
       category: "",
       file: null,
       coverImage: null,
-      isDownloadable: true,
-      isReadableOnline: true,
     },
   });
 
@@ -147,7 +143,7 @@ const UploadDialog = ({ triggerButton }: UploadDialogProps) => {
         }
       }
 
-      // Save magazine metadata to database
+      // Save magazine metadata to database - only readable online, no downloads
       const { error: dbError } = await supabase
         .from('magazines')
         .insert({
@@ -159,8 +155,8 @@ const UploadDialog = ({ triggerButton }: UploadDialogProps) => {
           file_size: selectedFile.size,
           file_url: urlData.publicUrl,
           cover_image_url: coverImageUrl,
-          is_downloadable: data.isDownloadable,
-          is_readable_online: data.isReadableOnline,
+          is_downloadable: false,
+          is_readable_online: true,
         });
 
       if (dbError) {
@@ -169,7 +165,7 @@ const UploadDialog = ({ triggerButton }: UploadDialogProps) => {
 
       toast({
         title: "Magazine uploaded successfully!",
-        description: `"${data.title}" has been added to the ${data.category} category.`,
+        description: `"${data.title}" has been added to the ${data.category} category and is available for online reading.`,
       });
       
       // Reset form and close dialog
@@ -203,7 +199,7 @@ const UploadDialog = ({ triggerButton }: UploadDialogProps) => {
         <DialogHeader>
           <DialogTitle>Upload New Magazine</DialogTitle>
           <DialogDescription>
-            Upload a PDF magazine to share with the Be Inspired community.
+            Upload a PDF magazine to share with the Be Inspired community. Your magazine will be available for online reading only.
           </DialogDescription>
         </DialogHeader>
         
@@ -359,55 +355,10 @@ const UploadDialog = ({ triggerButton }: UploadDialogProps) => {
               </div>
             </div>
 
-            {/* Reading Options */}
-            <div className="space-y-4">
-              <Label>Reading Options</Label>
-              <div className="space-y-3">
-                <FormField
-                  control={form.control}
-                  name="isReadableOnline"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          Allow online reading
-                        </FormLabel>
-                        <p className="text-xs text-muted-foreground">
-                          Users can read the magazine directly on the website
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="isDownloadable"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          Allow downloads
-                        </FormLabel>
-                        <p className="text-xs text-muted-foreground">
-                          Users can download the PDF file
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </div>
+            <div className="bg-muted/30 p-4 rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                📖 Your magazine will be available for online reading only. Readers can view your content directly in their browsers on any device, including mobile.
+              </p>
             </div>
 
             <div className="flex justify-end space-x-2 pt-4">

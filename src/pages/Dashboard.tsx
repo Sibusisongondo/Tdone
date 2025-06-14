@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -119,20 +118,22 @@ const Dashboard = () => {
   const handleMagazineAction = (magazine: Magazine) => {
     if (magazine.is_readable_online && magazine.file_url) {
       navigate(`/magazine/${magazine.id}`);
-    } else if (magazine.is_downloadable && magazine.file_url) {
-      window.open(magazine.file_url, '_blank');
+    } else {
+      toast({
+        title: "Not Available",
+        description: "This magazine is not available for reading.",
+        variant: "destructive",
+      });
     }
   };
 
   const getActionButtonText = (magazine: Magazine) => {
     if (magazine.is_readable_online) return "Read Online";
-    if (magazine.is_downloadable) return "Download";
     return "View";
   };
 
   const getActionIcon = (magazine: Magazine) => {
     if (magazine.is_readable_online) return <Eye className="h-4 w-4" />;
-    if (magazine.is_downloadable) return <Download className="h-4 w-4" />;
     return <FileText className="h-4 w-4" />;
   };
 
@@ -323,19 +324,13 @@ const Dashboard = () => {
                           <span>{formatDate(magazine.created_at)}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span>Readable online:</span>
+                          <span>Status:</span>
                           <Badge variant={magazine.is_readable_online ? "default" : "secondary"} className="text-xs">
-                            {magazine.is_readable_online ? "Yes" : "No"}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span>Downloadable:</span>
-                          <Badge variant={magazine.is_downloadable ? "default" : "secondary"} className="text-xs">
-                            {magazine.is_downloadable ? "Yes" : "No"}
+                            {magazine.is_readable_online ? "Available" : "Processing"}
                           </Badge>
                         </div>
                       </div>
-                      {magazine.file_url && (
+                      {magazine.file_url && magazine.is_readable_online && (
                         <div className="mt-4">
                           <Button 
                             variant="outline" 
