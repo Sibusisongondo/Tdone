@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Document, Page } from 'react-pdf';
-import { BookOpen, RefreshCw, AlertCircle } from 'lucide-react';
+import { BookOpen, RefreshCw, AlertCircle, ExternalLink } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 interface PDFViewerProps {
@@ -21,23 +21,29 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 }) => {
   const [retryCount, setRetryCount] = React.useState(0);
   const [hasError, setHasError] = React.useState(false);
+  const [urlTestResult, setUrlTestResult] = React.useState<string>('');
 
-  console.log('PDFViewer - File URL:', fileUrl);
-  console.log('PDFViewer - Page Number:', pageNumber);
-  console.log('PDFViewer - Scale:', scale);
-  console.log('PDFViewer - Retry Count:', retryCount);
+  console.log('PDFViewer - Rendering with props:', {
+    fileUrl,
+    pageNumber,
+    scale,
+    retryCount,
+    hasError
+  });
 
   const handleLoadSuccess = (pdf: { numPages: number }) => {
-    console.log('PDF loaded successfully with', pdf.numPages, 'pages');
+    console.log('✅ PDF loaded successfully with', pdf.numPages, 'pages');
     setHasError(false);
     setRetryCount(0);
+    setUrlTestResult('');
     onLoadSuccess(pdf);
   };
 
   const handleLoadError = (error: Error) => {
-    console.error('PDF loading error:', error);
+    console.error('❌ PDF loading error:', error);
     console.error('Error details:', {
       message: error.message,
+      name: error.name,
       stack: error.stack,
       fileUrl,
       retryCount,
@@ -49,32 +55,75 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   };
 
   const handleRetry = () => {
-    console.log('Retrying PDF load, attempt:', retryCount + 1);
+    console.log('🔄 Retrying PDF load, attempt:', retryCount + 1);
     setRetryCount(prev => prev + 1);
     setHasError(false);
+    setUrlTestResult('');
   };
 
-  // More robust PDF.js options
-  const options = {
-    cMapUrl: `https://unpkg.com/pdfjs-dist@3.11.174/cmaps/`,
-    cMapPacked: true,
-    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/`,
-    enableXfa: true,
-    withCredentials: false,
-  };
-
-  // Test if the URL is accessible
+  // Test URL accessibility with detailed logging
   const testUrl = React.useCallback(async () => {
+    if (!fileUrl) {
+      console.warn('⚠️ No file URL provided');
+      setUrlTestResult('No file URL provided');
+      return;
+    }
+
     try {
-      console.log('Testing URL accessibility:', fileUrl);
-      const response = await fetch(fileUrl, { 
+      console.log('🔍 Testing URL accessibility:', fileUrl);
+      
+      // Try to parse the URL first
+      const url = new URL(fileUrl);
+      console.log('📍 Parsed URL:', {
+        protocol: url.protocol,
+        host: url.host,
+        pathname: url.pathname,
+        search: url.search
+      });
+
+      // Test with HEAD request first
+      const headResponse = await fetch(fileUrl, { 
         method: 'HEAD',
         mode: 'cors'
       });
-      console.log('URL test response status:', response.status);
-      console.log('URL test response headers:', Object.fromEntries(response.headers.entries()));
+      
+      console.log('📡 HEAD response:', {
+        status: headResponse.status,
+        statusText: headResponse.statusText,
+        headers: Object.fromEntries(headResponse.headers.entries()),
+        ok: headResponse.ok
+      });
+
+      if (headResponse.ok) {
+        setUrlTestResult(`URL accessible (${headResponse.status})`);
+        
+        // Check content type
+        const contentType = headResponse.headers.get('content-type');
+        console.log('📄 Content-Type:', contentType);
+        
+        if (contentType && !contentType.includes('pdf')) {
+          console.warn('⚠️ Content-Type is not PDF:', contentType);
+          setUrlTestResult(`Warning: Content-Type is ${contentType}, not PDF`);
+        }
+      } else {
+        setUrlTestResult(`URL not accessible (${headResponse.status}: ${headResponse.statusText})`);
+      }
     } catch (error) {
-      console.error('URL accessibility test failed:', error);
+      console.error('❌ URL accessibility test failed:', error);
+      setUrlTestResult(`URL test failed: ${error.message}`);
+      
+      // Try a different approach - test with GET request
+      try {
+        console.log('🔄 Trying GET request as fallback...');
+        const getResponse = await fetch(fileUrl, { 
+          method: 'GET',
+          mode: 'no-cors' // This might work for CORS-restricted resources
+        });
+        console.log('📡 GET (no-cors) response:', getResponse);
+        setUrlTestResult(`GET request completed (opaque response due to no-cors)`);
+      } catch (getError) {
+        console.error('❌ GET request also failed:', getError);
+      }
     }
   }, [fileUrl]);
 
@@ -82,7 +131,23 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     if (fileUrl) {
       testUrl();
     }
-  }, [fileUrl, testUrl]);
+  }, [fileUrl, testUrl, retryCount]);
+
+  // Enhanced PDF.js options
+  const options = {
+    cMapUrl: `https://unpkg.com/pdfjs-dist@3.11.174/cmaps/`,
+    cMapPacked: true,
+    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/`,
+    enableXfa: true,
+    withCredentials: false,
+    // Add more options for better compatibility
+    verbosity: 1, // Enable verbose logging
+    isEvalSupported: false,
+    disableWorker: false,
+    disableAutoFetch: false,
+    disableStream: false,
+    disableFontFace: false,
+  };
 
   if (hasError) {
     return (
@@ -91,13 +156,25 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         <h3 className="text-lg font-semibold text-destructive text-center mb-2">
           Failed to load PDF document
         </h3>
-        <p className="text-sm text-muted-foreground text-center mb-4 max-w-md">
-          This could be due to:
-          <br />• Network connectivity issues
-          <br />• CORS restrictions on the file server
-          <br />• Invalid or corrupted PDF file
-          <br />• Browser compatibility issues
-        </p>
+        <div className="text-sm text-muted-foreground text-center mb-4 max-w-md space-y-2">
+          <p>This could be due to:</p>
+          <ul className="text-left list-disc list-inside space-y-1">
+            <li>Network connectivity issues</li>
+            <li>CORS restrictions on the file server</li>
+            <li>Invalid or corrupted PDF file</li>
+            <li>Browser compatibility issues</li>
+          </ul>
+          {urlTestResult && (
+            <div className="mt-3 p-2 bg-muted rounded text-xs">
+              <strong>URL Test:</strong> {urlTestResult}
+            </div>
+          )}
+          {fileUrl && (
+            <div className="mt-2 p-2 bg-muted rounded text-xs break-all">
+              <strong>File URL:</strong> {fileUrl}
+            </div>
+          )}
+        </div>
         <div className="flex flex-col gap-2">
           <Button onClick={handleRetry} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -108,6 +185,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
             size="sm"
             onClick={() => window.open(fileUrl, '_blank')}
           >
+            <ExternalLink className="h-4 w-4 mr-2" />
             Open in New Tab
           </Button>
         </div>
@@ -128,6 +206,11 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
             <span className="text-sm text-muted-foreground">
               Loading PDF... {retryCount > 0 && `(Attempt ${retryCount + 1})`}
             </span>
+            {urlTestResult && (
+              <div className="mt-2 text-xs text-muted-foreground max-w-md text-center">
+                {urlTestResult}
+              </div>
+            )}
           </div>
         }
         error={null}
