@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,11 +17,6 @@ import PDFViewer from "@/components/PDFViewer";
 if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
   pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 }
-
-// Configure PDF.js for better compatibility
-pdfjs.disableWorker = false;
-pdfjs.disableAutoFetch = false;
-pdfjs.disableStream = false;
 
 const MagazineViewer = () => {
   const { id } = useParams<{ id: string }>();
