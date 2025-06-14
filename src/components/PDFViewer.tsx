@@ -37,6 +37,14 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     }
   }, [onLoadSuccess]);
 
+  const handleDocumentLoadError = React.useCallback((error: any) => {
+    console.error('❌ PDF document failed to load:', error);
+    setHasError(true);
+    if (onLoadError) {
+      onLoadError(new Error('Failed to load PDF document'));
+    }
+  }, [onLoadError]);
+
   if (!fileUrl) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -71,11 +79,12 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 
   return (
     <div className="w-full bg-white" style={{ minHeight: '600px' }}>
-      <Worker workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js">
+      <Worker workerUrl="https://unpkg.com/@react-pdf-viewer/core@3.12.0/lib/pdf.worker.min.js">
         <Viewer
           fileUrl={fileUrl}
           plugins={[defaultLayoutPluginInstance]}
           onDocumentLoad={handleDocumentLoad}
+          onLoadError={handleDocumentLoadError}
         />
       </Worker>
     </div>
