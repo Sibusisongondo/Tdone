@@ -21,7 +21,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 }) => {
   const [retryCount, setRetryCount] = React.useState(0);
   const [hasError, setHasError] = React.useState(false);
-  const [urlTestResult, setUrlTestResult] = React.useState<string>('');
+  const [pdfBlob, setPdfBlob] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   console.log('PDFViewer - Rendering with props:', {
     fileUrl,
@@ -31,25 +32,67 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     hasError
   });
 
+  // Fetch PDF as blob for better compatibility
+  const fetchPdfAsBlob = React.useCallback(async () => {
+    if (!fileUrl) return;
+
+    try {
+      setIsLoading(true);
+      console.log('🔄 Fetching PDF as blob from:', fileUrl);
+      
+      const response = await fetch(fileUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/pdf,*/*',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      console.log('📄 Response content-type:', contentType);
+
+      const blob = await response.blob();
+      console.log('✅ PDF blob created:', {
+        size: blob.size,
+        type: blob.type
+      });
+
+      const blobUrl = URL.createObjectURL(blob);
+      setPdfBlob(blobUrl);
+      setHasError(false);
+      
+    } catch (error) {
+      console.error('❌ Failed to fetch PDF as blob:', error);
+      setHasError(true);
+      onLoadError(error as Error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fileUrl, onLoadError]);
+
+  React.useEffect(() => {
+    fetchPdfAsBlob();
+    
+    // Cleanup blob URL when component unmounts or fileUrl changes
+    return () => {
+      if (pdfBlob) {
+        URL.revokeObjectURL(pdfBlob);
+      }
+    };
+  }, [fetchPdfAsBlob, fileUrl]);
+
   const handleLoadSuccess = (pdf: { numPages: number }) => {
     console.log('✅ PDF loaded successfully with', pdf.numPages, 'pages');
     setHasError(false);
     setRetryCount(0);
-    setUrlTestResult('');
     onLoadSuccess(pdf);
   };
 
   const handleLoadError = (error: Error) => {
-    console.error('❌ PDF loading error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-      fileUrl,
-      retryCount,
-      userAgent: navigator.userAgent,
-      timestamp: new Date().toISOString()
-    });
+    console.error('❌ PDF.js loading error:', error);
     setHasError(true);
     onLoadError(error);
   };
@@ -58,110 +101,31 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     console.log('🔄 Retrying PDF load, attempt:', retryCount + 1);
     setRetryCount(prev => prev + 1);
     setHasError(false);
-    setUrlTestResult('');
+    setPdfBlob(null);
+    fetchPdfAsBlob();
   };
 
-  // Test URL accessibility with detailed logging
-  const testUrl = React.useCallback(async () => {
-    if (!fileUrl) {
-      console.warn('⚠️ No file URL provided');
-      setUrlTestResult('No file URL provided');
-      return;
-    }
-
-    try {
-      console.log('🔍 Testing URL accessibility:', fileUrl);
-      
-      // Try to parse the URL first
-      const url = new URL(fileUrl);
-      console.log('📍 Parsed URL:', {
-        protocol: url.protocol,
-        host: url.host,
-        pathname: url.pathname,
-        search: url.search
-      });
-
-      // Test with HEAD request first
-      const headResponse = await fetch(fileUrl, { 
-        method: 'HEAD',
-        mode: 'cors'
-      });
-      
-      console.log('📡 HEAD response:', {
-        status: headResponse.status,
-        statusText: headResponse.statusText,
-        headers: Object.fromEntries(headResponse.headers.entries()),
-        ok: headResponse.ok
-      });
-
-      if (headResponse.ok) {
-        setUrlTestResult(`URL accessible (${headResponse.status})`);
-        
-        // Check content type
-        const contentType = headResponse.headers.get('content-type');
-        console.log('📄 Content-Type:', contentType);
-        
-        if (contentType && !contentType.includes('pdf')) {
-          console.warn('⚠️ Content-Type is not PDF:', contentType);
-          setUrlTestResult(`Warning: Content-Type is ${contentType}, not PDF`);
-        }
-      } else {
-        setUrlTestResult(`URL not accessible (${headResponse.status}: ${headResponse.statusText})`);
-      }
-    } catch (error) {
-      console.error('❌ URL accessibility test failed:', error);
-      setUrlTestResult(`URL test failed: ${error.message}`);
-    }
-  }, [fileUrl]);
-
-  React.useEffect(() => {
-    if (fileUrl) {
-      testUrl();
-    }
-  }, [fileUrl, testUrl, retryCount]);
-
-  // Process URL for better compatibility with Supabase storage
-  const processFileUrl = React.useMemo(() => {
-    if (!fileUrl) return '';
-    
-    // If it's a Supabase storage URL, we might need to handle it differently
-    if (fileUrl.includes('supabase.co/storage/v1/object/public/')) {
-      console.log('🔧 Processing Supabase storage URL:', fileUrl);
-      // For Supabase storage, we can try to fetch the file as a blob first
-      return fileUrl;
-    }
-    
-    return fileUrl;
-  }, [fileUrl]);
-
-  // Enhanced PDF.js options with better error handling
+  // Enhanced PDF.js options
   const options = React.useMemo(() => ({
     cMapUrl: `https://unpkg.com/pdfjs-dist@3.11.174/cmaps/`,
     cMapPacked: true,
     standardFontDataUrl: `https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/`,
     enableXfa: true,
-    withCredentials: false,
     verbosity: 1,
-    isEvalSupported: false,
-    disableWorker: false,
-    disableAutoFetch: false,
-    disableStream: false,
-    disableFontFace: false,
-    // Add httpHeaders for better CORS handling
-    httpHeaders: {
-      'Access-Control-Allow-Origin': '*',
-    },
-    // Use a proxy function for Supabase URLs
-    ...(fileUrl?.includes('supabase.co') && {
-      // Custom file loader for Supabase
-      url: processFileUrl,
-      rangeChunkSize: 65536,
-      disableAutoFetch: true,
-      disableStream: true,
-    })
-  }), [fileUrl, processFileUrl]);
+  }), []);
 
-  if (hasError) {
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 p-8">
+        <BookOpen className="h-8 w-8 text-primary animate-pulse mb-2" />
+        <span className="text-sm text-muted-foreground">
+          Loading PDF... {retryCount > 0 && `(Attempt ${retryCount + 1})`}
+        </span>
+      </div>
+    );
+  }
+
+  if (hasError || !pdfBlob) {
     return (
       <div className="flex flex-col items-center justify-center h-96 p-8">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />
@@ -176,11 +140,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
             <li>Network connectivity issues</li>
             <li>Invalid or corrupted PDF file</li>
           </ul>
-          {urlTestResult && (
-            <div className="mt-3 p-2 bg-muted rounded text-xs">
-              <strong>URL Test:</strong> {urlTestResult}
-            </div>
-          )}
           {fileUrl && (
             <div className="mt-2 p-2 bg-muted rounded text-xs break-all">
               <strong>File URL:</strong> {fileUrl}
@@ -208,7 +167,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   return (
     <div className="flex justify-center p-4 overflow-auto bg-gray-50 min-h-96">
       <Document
-        file={processFileUrl}
+        file={pdfBlob}
         onLoadSuccess={handleLoadSuccess}
         onLoadError={handleLoadError}
         options={options}
@@ -218,15 +177,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
             <span className="text-sm text-muted-foreground">
               Loading PDF... {retryCount > 0 && `(Attempt ${retryCount + 1})`}
             </span>
-            {urlTestResult && (
-              <div className="mt-2 text-xs text-muted-foreground max-w-md text-center">
-                {urlTestResult}
-              </div>
-            )}
           </div>
         }
         error={null}
-        key={`${processFileUrl}-${retryCount}`}
+        key={`${fileUrl}-${retryCount}`}
       >
         <Page
           pageNumber={pageNumber}
