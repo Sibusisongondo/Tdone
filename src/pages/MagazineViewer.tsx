@@ -3,9 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookOpen, ZoomIn, ZoomOut, RotateCw } from "lucide-react";
+import { ArrowLeft, BookOpen, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+// Set up PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 interface Magazine {
   id: string;
@@ -27,7 +33,9 @@ const MagazineViewer = () => {
   const { toast } = useToast();
   const [magazine, setMagazine] = useState<Magazine | null>(null);
   const [loading, setLoading] = useState(true);
-  const [zoom, setZoom] = useState(1);
+  const [numPages, setNumPages] = useState<number>(0);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const [scale, setScale] = useState<number>(1.0);
 
   useEffect(() => {
     if (!id) {
@@ -73,16 +81,38 @@ const MagazineViewer = () => {
     }
   };
 
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setPageNumber(1);
+  };
+
+  const onDocumentLoadError = (error: Error) => {
+    console.error('Error loading PDF:', error);
+    toast({
+      title: "Error",
+      description: "Failed to load the PDF document.",
+      variant: "destructive",
+    });
+  };
+
+  const goToPrevPage = () => {
+    setPageNumber(prev => Math.max(prev - 1, 1));
+  };
+
+  const goToNextPage = () => {
+    setPageNumber(prev => Math.min(prev + 1, numPages));
+  };
+
   const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + 0.25, 3));
+    setScale(prev => Math.min(prev + 0.2, 3));
   };
 
   const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - 0.25, 0.5));
+    setScale(prev => Math.max(prev - 0.2, 0.5));
   };
 
   const resetZoom = () => {
-    setZoom(1);
+    setScale(1.0);
   };
 
   if (loading) {
@@ -133,7 +163,7 @@ const MagazineViewer = () => {
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="sm" onClick={resetZoom}>
-                {Math.round(zoom * 100)}%
+                {Math.round(scale * 100)}%
               </Button>
               <Button variant="outline" size="sm" onClick={handleZoomIn}>
                 <ZoomIn className="h-4 w-4" />
@@ -158,70 +188,64 @@ const MagazineViewer = () => {
           </CardHeader>
         </Card>
 
-        {/* PDF Viewer - Universal Compatibility */}
+        {/* PDF Viewer with Page Navigation */}
         <Card>
           <CardContent className="p-0">
             {magazine.file_url ? (
-              <div className="w-full overflow-auto">
-                {/* Try multiple fallback methods */}
-                <div className="w-full min-h-[80vh]">
-                  {/* Primary: Modern browsers with embed */}
-                  <embed
-                    src={`${magazine.file_url}#view=FitH&zoom=${Math.round(zoom * 100)}&toolbar=0&navpanes=0&scrollbar=1`}
-                    type="application/pdf"
-                    className="w-full h-[80vh] min-h-[600px] block"
-                    style={{ 
-                      border: 'none',
-                      transform: `scale(${zoom})`,
-                      transformOrigin: 'top left',
-                      width: `${100 / zoom}%`,
-                      height: `${80 / zoom}vh`
-                    }}
-                    onError={(e) => {
-                      // Hide the embed and show iframe fallback
-                      (e.target as HTMLElement).style.display = 'none';
-                      const iframe = document.getElementById('pdf-iframe') as HTMLIFrameElement;
-                      if (iframe) {
-                        iframe.style.display = 'block';
-                      }
-                    }}
-                  />
+              <div className="w-full">
+                {/* Page Navigation */}
+                <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToPrevPage}
+                    disabled={pageNumber <= 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
                   
-                  {/* Secondary: iframe fallback */}
-                  <iframe
-                    id="pdf-iframe"
-                    src={`${magazine.file_url}#view=FitH&zoom=${Math.round(zoom * 100)}&toolbar=0&navpanes=0&scrollbar=1`}
-                    className="w-full h-[80vh] min-h-[600px] border-0 hidden"
-                    title={magazine.title}
-                    style={{ 
-                      transform: `scale(${zoom})`,
-                      transformOrigin: 'top left',
-                      width: `${100 / zoom}%`,
-                      height: `${80 / zoom}vh`
-                    }}
-                    onError={(e) => {
-                      // Hide the iframe and show Google Docs viewer
-                      (e.target as HTMLElement).style.display = 'none';
-                      const googleViewer = document.getElementById('google-viewer') as HTMLIFrameElement;
-                      if (googleViewer) {
-                        googleViewer.style.display = 'block';
-                      }
-                    }}
-                  />
+                  <span className="text-sm text-muted-foreground">
+                    Page {pageNumber} of {numPages}
+                  </span>
                   
-                  {/* Tertiary: Google Docs Viewer (works on most mobile browsers) */}
-                  <iframe
-                    id="google-viewer"
-                    src={`https://docs.google.com/viewer?url=${encodeURIComponent(magazine.file_url)}&embedded=true`}
-                    className="w-full h-[80vh] min-h-[600px] border-0 hidden"
-                    title={magazine.title}
-                    style={{ 
-                      transform: `scale(${zoom})`,
-                      transformOrigin: 'top left',
-                      width: `${100 / zoom}%`,
-                      height: `${80 / zoom}vh`
-                    }}
-                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={goToNextPage}
+                    disabled={pageNumber >= numPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+
+                {/* PDF Document */}
+                <div className="flex justify-center p-4 overflow-auto">
+                  <Document
+                    file={magazine.file_url}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    onLoadError={onDocumentLoadError}
+                    loading={
+                      <div className="flex items-center justify-center h-96">
+                        <BookOpen className="h-8 w-8 text-primary animate-pulse mr-2" />
+                        <span>Loading PDF...</span>
+                      </div>
+                    }
+                    error={
+                      <div className="flex items-center justify-center h-96">
+                        <p className="text-destructive">Failed to load PDF. Please try again.</p>
+                      </div>
+                    }
+                  >
+                    <Page
+                      pageNumber={pageNumber}
+                      scale={scale}
+                      className="shadow-lg"
+                      renderTextLayer={true}
+                      renderAnnotationLayer={true}
+                    />
+                  </Document>
                 </div>
               </div>
             ) : (
@@ -233,10 +257,10 @@ const MagazineViewer = () => {
         </Card>
 
         {/* Mobile Instructions */}
-        <div className="mt-4 p-4 bg-muted/30 rounded-lg md:hidden">
+        <div className="mt-4 p-4 bg-muted/30 rounded-lg">
           <p className="text-sm text-muted-foreground text-center">
-            📱 On mobile: Use pinch-to-zoom and scroll to navigate the magazine. 
-            Use the zoom controls above for better reading experience.
+            📖 Use the Previous/Next buttons or swipe gestures to navigate pages. 
+            Use zoom controls for better reading experience.
           </p>
         </div>
       </div>

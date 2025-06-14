@@ -1,3 +1,4 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -39,4 +40,23 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* PDF.js styling fixes for better mobile experience */
+.react-pdf__Page {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.react-pdf__Page__canvas {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.react-pdf__Page__textContent {
+  max-width: 100% !important;
+}
+
+.react-pdf__Page__annotations {
+  max-width: 100% !important;
 }
