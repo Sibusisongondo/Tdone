@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,11 @@ interface UploadFormData {
   isReadableOnline: boolean;
 }
 
-const UploadDialog = () => {
+interface UploadDialogProps {
+  triggerButton?: React.ReactNode;
+}
+
+const UploadDialog = ({ triggerButton }: UploadDialogProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedCoverImage, setSelectedCoverImage] = useState<File | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -189,16 +192,18 @@ const UploadDialog = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="flex items-center space-x-2">
-          <Upload className="h-4 w-4" />
-          <span>Upload Magazine</span>
-        </Button>
+        {triggerButton || (
+          <Button className="flex items-center space-x-2">
+            <Upload className="h-4 w-4" />
+            <span>Upload Magazine</span>
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Upload New Magazine</DialogTitle>
           <DialogDescription>
-            Upload a PDF magazine to share with the ThizaGraphix community.
+            Upload a PDF magazine to share with the Be Inspired community.
           </DialogDescription>
         </DialogHeader>
         

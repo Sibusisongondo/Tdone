@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { Share, Copy, Check } from "lucide-react";
+import { Share, Copy, Check, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ShareButtonProps {
@@ -36,12 +36,15 @@ const ShareButton = ({ magazineId, artistId, title }: ShareButtonProps) => {
     }
   };
 
+  const openInNewTab = () => {
+    window.open(shareUrl, '_blank');
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Share className="h-4 w-4 mr-2" />
-          Share
+        <Button variant="ghost" size="sm">
+          <Share className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80">
@@ -68,6 +71,17 @@ const ShareButton = ({ magazineId, artistId, title }: ShareButtonProps) => {
               ) : (
                 <Copy className="h-4 w-4" />
               )}
+            </Button>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              onClick={openInNewTab}
+              variant="outline"
+              size="sm"
+              className="flex items-center space-x-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              <span>Open Link</span>
             </Button>
           </div>
         </div>

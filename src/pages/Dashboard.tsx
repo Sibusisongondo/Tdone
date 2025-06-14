@@ -1,13 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, FileText, Trash2, Calendar, Users, Download, Eye, User, ChevronDown } from "lucide-react";
+import { LogOut, FileText, Trash2, Calendar, Users, Download, Eye, User, ChevronDown, Upload } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import UploadDialog from "@/components/UploadDialog";
+import ShareButton from "@/components/ShareButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -159,8 +161,19 @@ const Dashboard = () => {
                 <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">Be Inspired</h1>
               </Button>
             </div>
-            <div className="flex items-center space-x-4">
-              <UploadDialog />
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Mobile-friendly upload button */}
+              <div className="block sm:hidden">
+                <UploadDialog triggerButton={
+                  <Button size="sm" className="px-2">
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                } />
+              </div>
+              <div className="hidden sm:block">
+                <UploadDialog />
+              </div>
+              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center space-x-2">
@@ -276,14 +289,21 @@ const Dashboard = () => {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <Badge variant="secondary">{magazine.category}</Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(magazine.id, magazine.file_name)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center space-x-1">
+                          <ShareButton 
+                            magazineId={magazine.id}
+                            artistId={user.id}
+                            title={magazine.title}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(magazine.id, magazine.file_name)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       <CardTitle className="text-lg line-clamp-2">{magazine.title}</CardTitle>
                       {magazine.description && (
