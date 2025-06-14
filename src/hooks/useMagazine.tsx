@@ -26,6 +26,7 @@ export const useMagazine = (id: string | undefined) => {
 
   useEffect(() => {
     if (!id) {
+      console.error('No magazine ID provided');
       navigate('/');
       return;
     }
@@ -34,6 +35,8 @@ export const useMagazine = (id: string | undefined) => {
 
   const fetchMagazine = async () => {
     try {
+      console.log('Fetching magazine with ID:', id);
+      
       const { data, error } = await supabase
         .from('magazines')
         .select('*')
@@ -41,10 +44,14 @@ export const useMagazine = (id: string | undefined) => {
         .single();
 
       if (error) {
+        console.error('Supabase error fetching magazine:', error);
         throw error;
       }
 
+      console.log('Fetched magazine data:', data);
+
       if (!data.is_readable_online) {
+        console.warn('Magazine is not available for online reading:', data.id);
         toast({
           title: "Access Denied",
           description: "This magazine is not available for online reading.",
@@ -54,12 +61,21 @@ export const useMagazine = (id: string | undefined) => {
         return;
       }
 
+      if (!data.file_url) {
+        console.warn('Magazine has no file URL:', data.id);
+        toast({
+          title: "File Not Available",
+          description: "This magazine does not have a file associated with it.",
+          variant: "destructive",
+        });
+      }
+
       setMagazine(data);
     } catch (error) {
       console.error('Error fetching magazine:', error);
       toast({
         title: "Error",
-        description: "Failed to load the magazine.",
+        description: "Failed to load the magazine. Please try again.",
         variant: "destructive",
       });
       navigate('/');

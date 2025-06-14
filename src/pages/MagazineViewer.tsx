@@ -13,8 +13,8 @@ import MagazineInfo from "@/components/MagazineInfo";
 import PDFControls from "@/components/PDFControls";
 import PDFViewer from "@/components/PDFViewer";
 
-// Set up PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+// Set up PDF.js worker with more robust configuration
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 const MagazineViewer = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +27,8 @@ const MagazineViewer = () => {
 
   console.log('MagazineViewer - Current magazine:', magazine);
   console.log('MagazineViewer - Loading state:', loading);
+  console.log('MagazineViewer - PDF.js version:', pdfjs.version);
+  console.log('MagazineViewer - Worker source:', pdfjs.GlobalWorkerOptions.workerSrc);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     console.log('Document loaded successfully with', numPages, 'pages');
@@ -40,10 +42,17 @@ const MagazineViewer = () => {
 
   const onDocumentLoadError = (error: Error) => {
     console.error('Document load error in MagazineViewer:', error);
-    console.error('Magazine file URL:', magazine?.file_url);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      magazineId: id,
+      fileUrl: magazine?.file_url,
+      userAgent: navigator.userAgent
+    });
+    
     toast({
       title: "PDF Loading Error",
-      description: "Unable to load the PDF document. Please check your internet connection and try again.",
+      description: "Unable to load the PDF document. This might be due to CORS restrictions or file format issues.",
       variant: "destructive",
     });
   };
@@ -97,7 +106,8 @@ const MagazineViewer = () => {
     id: magazine.id,
     title: magazine.title,
     file_url: magazine.file_url,
-    file_size: magazine.file_size
+    file_size: magazine.file_size,
+    is_readable_online: magazine.is_readable_online
   });
 
   return (
@@ -107,11 +117,11 @@ const MagazineViewer = () => {
           scale={scale}
           pageNumber={pageNumber}
           numPages={numPages}
-          onZoomIn={handleZoomIn}
-          onZoomOut={handleZoomOut}
-          onResetZoom={resetZoom}
-          onPrevPage={goToPrevPage}
-          onNextPage={goToNextPage}
+          onZoomIn={() => setScale(prev => Math.min(prev + 0.2, 3))}
+          onZoomOut={() => setScale(prev => Math.max(prev - 0.2, 0.5))}
+          onResetZoom={() => setScale(1.0)}
+          onPrevPage={() => setPageNumber(prev => Math.max(prev - 1, 1))}
+          onNextPage={() => setPageNumber(prev => Math.min(prev + 1, numPages))}
         />
       </MagazineHeader>
 
@@ -126,11 +136,11 @@ const MagazineViewer = () => {
                   scale={scale}
                   pageNumber={pageNumber}
                   numPages={numPages}
-                  onZoomIn={handleZoomIn}
-                  onZoomOut={handleZoomOut}
-                  onResetZoom={resetZoom}
-                  onPrevPage={goToPrevPage}
-                  onNextPage={goToNextPage}
+                  onZoomIn={() => setScale(prev => Math.min(prev + 0.2, 3))}
+                  onZoomOut={() => setScale(prev => Math.max(prev - 0.2, 0.5))}
+                  onResetZoom={() => setScale(1.0)}
+                  onPrevPage={() => setPageNumber(prev => Math.max(prev - 1, 1))}
+                  onNextPage={() => setPageNumber(prev => Math.min(prev + 1, numPages))}
                 />
 
                 <PDFViewer

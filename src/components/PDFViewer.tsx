@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Document, Page } from 'react-pdf';
-import { BookOpen, RefreshCw } from 'lucide-react';
+import { BookOpen, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 interface PDFViewerProps {
@@ -25,6 +25,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   console.log('PDFViewer - File URL:', fileUrl);
   console.log('PDFViewer - Page Number:', pageNumber);
   console.log('PDFViewer - Scale:', scale);
+  console.log('PDFViewer - Retry Count:', retryCount);
 
   const handleLoadSuccess = (pdf: { numPages: number }) => {
     console.log('PDF loaded successfully with', pdf.numPages, 'pages');
@@ -39,7 +40,9 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
       message: error.message,
       stack: error.stack,
       fileUrl,
-      retryCount
+      retryCount,
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString()
     });
     setHasError(true);
     onLoadError(error);
@@ -51,41 +54,80 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     setHasError(false);
   };
 
+  // More robust PDF.js options
   const options = {
-    cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/',
+    cMapUrl: `https://unpkg.com/pdfjs-dist@3.11.174/cmaps/`,
     cMapPacked: true,
-    standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/',
+    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/`,
+    enableXfa: true,
+    withCredentials: false,
   };
+
+  // Test if the URL is accessible
+  const testUrl = React.useCallback(async () => {
+    try {
+      console.log('Testing URL accessibility:', fileUrl);
+      const response = await fetch(fileUrl, { 
+        method: 'HEAD',
+        mode: 'cors'
+      });
+      console.log('URL test response status:', response.status);
+      console.log('URL test response headers:', Object.fromEntries(response.headers.entries()));
+    } catch (error) {
+      console.error('URL accessibility test failed:', error);
+    }
+  }, [fileUrl]);
+
+  React.useEffect(() => {
+    if (fileUrl) {
+      testUrl();
+    }
+  }, [fileUrl, testUrl]);
 
   if (hasError) {
     return (
       <div className="flex flex-col items-center justify-center h-96 p-8">
-        <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-destructive text-center mb-4">
-          Failed to load PDF document.
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <h3 className="text-lg font-semibold text-destructive text-center mb-2">
+          Failed to load PDF document
+        </h3>
+        <p className="text-sm text-muted-foreground text-center mb-4 max-w-md">
+          This could be due to:
+          <br />• Network connectivity issues
+          <br />• CORS restrictions on the file server
+          <br />• Invalid or corrupted PDF file
+          <br />• Browser compatibility issues
         </p>
-        <p className="text-sm text-muted-foreground text-center mb-4">
-          This could be due to network issues or the file format.
-        </p>
-        <Button onClick={handleRetry} variant="outline">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Try Again
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button onClick={handleRetry} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Again {retryCount > 0 && `(Attempt ${retryCount + 1})`}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => window.open(fileUrl, '_blank')}
+          >
+            Open in New Tab
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center p-4 overflow-auto">
+    <div className="flex justify-center p-4 overflow-auto bg-gray-50 min-h-96">
       <Document
         file={fileUrl}
         onLoadSuccess={handleLoadSuccess}
         onLoadError={handleLoadError}
         options={options}
         loading={
-          <div className="flex items-center justify-center h-96">
-            <BookOpen className="h-8 w-8 text-primary animate-pulse mr-2" />
-            <span>Loading PDF... {retryCount > 0 && `(Attempt ${retryCount + 1})`}</span>
+          <div className="flex flex-col items-center justify-center h-96">
+            <BookOpen className="h-8 w-8 text-primary animate-pulse mb-2" />
+            <span className="text-sm text-muted-foreground">
+              Loading PDF... {retryCount > 0 && `(Attempt ${retryCount + 1})`}
+            </span>
           </div>
         }
         error={null}
@@ -94,18 +136,25 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         <Page
           pageNumber={pageNumber}
           scale={scale}
-          className="shadow-lg"
+          className="shadow-lg mx-auto"
           renderTextLayer={true}
           renderAnnotationLayer={true}
           loading={
-            <div className="flex items-center justify-center h-96">
-              <BookOpen className="h-8 w-8 text-primary animate-pulse mr-2" />
-              <span>Rendering page {pageNumber}...</span>
+            <div className="flex items-center justify-center h-96 bg-white shadow-lg">
+              <div className="text-center">
+                <BookOpen className="h-8 w-8 text-primary animate-pulse mx-auto mb-2" />
+                <span className="text-sm text-muted-foreground">
+                  Rendering page {pageNumber}...
+                </span>
+              </div>
             </div>
           }
           error={
-            <div className="flex items-center justify-center h-96">
-              <p className="text-destructive">Failed to render page {pageNumber}</p>
+            <div className="flex items-center justify-center h-96 bg-white shadow-lg">
+              <div className="text-center">
+                <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+                <p className="text-destructive text-sm">Failed to render page {pageNumber}</p>
+              </div>
             </div>
           }
         />
