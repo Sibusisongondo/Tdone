@@ -138,12 +138,12 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center p-4">
         <div className="text-center space-y-4">
-          <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-24 w-24 mx-auto animate-pulse" />
+          <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-16 w-16 sm:h-24 sm:w-24 mx-auto animate-pulse" />
           <div className="space-y-2">
-            <div className="h-4 bg-muted rounded w-32 mx-auto animate-pulse" />
-            <div className="h-3 bg-muted/60 rounded w-24 mx-auto animate-pulse" />
+            <div className="h-3 sm:h-4 bg-muted rounded w-24 sm:w-32 mx-auto animate-pulse" />
+            <div className="h-2 sm:h-3 bg-muted/60 rounded w-16 sm:w-24 mx-auto animate-pulse" />
           </div>
         </div>
       </div>
@@ -154,24 +154,26 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
       {/* Modern Header */}
       <header className="glass sticky top-0 z-50 border-b border-border/50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="relative">
-                <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-10 w-10 animate-float" />
-                <Sparkles className="h-4 w-4 text-primary/60 absolute -top-1 -right-1 animate-pulse" />
+                <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-8 w-8 sm:h-10 sm:w-10 animate-float" />
+                <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-primary/60 absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 animate-pulse" />
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 Be Inspired
               </h1>
             </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
+            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
               <ThemeToggle />
-              <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')} className="btn-modern">
-                Dashboard
+              <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')} className="btn-modern text-xs sm:text-sm px-2 sm:px-3">
+                <span className="hidden sm:inline">Dashboard</span>
+                <span className="sm:hidden">Dash</span>
               </Button>
-              <Button onClick={() => navigate('/auth')} className="btn-modern bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
-                Sign Up
+              <Button onClick={() => navigate('/auth')} className="btn-modern bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-xs sm:text-sm px-2 sm:px-3">
+                <span className="hidden sm:inline">Sign Up</span>
+                <span className="sm:hidden">Sign Up</span>
               </Button>
             </div>
           </div>
@@ -179,33 +181,33 @@ const Index = () => {
       </header>
 
       {/* Modern Hero Section */}
-      <section className="relative py-16 sm:py-20 lg:py-32 overflow-hidden">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="max-w-5xl mx-auto space-y-8">
-            <h1 className="text-responsive-3xl font-bold bg-gradient-to-r from-primary via-primary/80 to-secondary bg-clip-text text-transparent leading-tight">
+      <section className="relative py-12 sm:py-16 lg:py-20 xl:py-32 overflow-hidden px-3 sm:px-0">
+        <div className="container mx-auto px-3 sm:px-6 lg:px-8 text-center">
+          <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-primary via-primary/80 to-secondary bg-clip-text text-transparent leading-tight">
               Discover and Share Creative Magazines
             </h1>
-            <p className="text-responsive-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed px-2 sm:px-0">
               Explore a vast collection of digital magazines created by talented artists from around the world.
               Share your favorites and connect with the creative community.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 lg:gap-6 px-2 sm:px-0">
               <Button 
                 size="lg" 
                 onClick={() => navigate('/auth')}
-                className="btn-modern bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 px-8 py-6 text-base sm:text-lg h-auto"
+                className="btn-modern bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base lg:text-lg h-auto w-full sm:w-auto"
               >
                 Get Started
-                <Sparkles className="ml-2 h-5 w-5" />
+                <Sparkles className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               <Button 
                 variant="outline" 
                 size="lg" 
                 onClick={() => navigate('/magazines')}
-                className="btn-modern px-8 py-6 text-base sm:text-lg h-auto border-2"
+                className="btn-modern px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base lg:text-lg h-auto border-2 w-full sm:w-auto"
               >
                 Explore Magazines
-                <BookOpen className="ml-2 h-5 w-5" />
+                <BookOpen className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
             </div>
           </div>
@@ -214,21 +216,21 @@ const Index = () => {
       </section>
 
       {/* Modern Stats Section */}
-      <section className="py-12 sm:py-16 lg:py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
+      <section className="py-8 sm:py-12 lg:py-16 xl:py-20 px-3 sm:px-0">
+        <div className="container mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {[
               { icon: BookOpen, value: stats.totalMagazines, label: "Magazines Published", gradient: "from-blue-500 to-purple-600" },
               { icon: Users, value: stats.registeredUsers, label: "Registered Artists", gradient: "from-purple-500 to-pink-600" },
               { icon: FolderOpen, value: stats.totalCategories, label: "Categories", gradient: "from-pink-500 to-orange-600" }
             ].map((stat, index) => (
               <Card key={index} className="card-hover glass border-0 text-center">
-                <CardContent className="p-6 sm:p-8 space-y-4">
-                  <div className={`w-16 h-16 mx-auto rounded-full bg-gradient-to-r ${stat.gradient} flex items-center justify-center mb-4`}>
-                    <stat.icon className="h-8 w-8 text-white" />
+                <CardContent className="p-4 sm:p-6 lg:p-8 space-y-3 sm:space-y-4">
+                  <div className={`w-12 h-12 sm:w-16 sm:h-16 mx-auto rounded-full bg-gradient-to-r ${stat.gradient} flex items-center justify-center mb-3 sm:mb-4`}>
+                    <stat.icon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <h3 className="text-3xl sm:text-4xl font-bold text-primary">{stat.value}</h3>
-                  <p className="text-muted-foreground text-sm sm:text-base">{stat.label}</p>
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary">{stat.value}</h3>
+                  <p className="text-muted-foreground text-xs sm:text-sm lg:text-base">{stat.label}</p>
                 </CardContent>
               </Card>
             ))}
@@ -237,35 +239,35 @@ const Index = () => {
       </section>
 
       {/* Modern Featured Magazines */}
-      <section className="py-12 sm:py-16 lg:py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16 space-y-4">
-            <h2 className="text-responsive-2xl font-bold">Latest Magazines</h2>
-            <p className="text-responsive-base text-muted-foreground max-w-2xl mx-auto">
+      <section className="py-8 sm:py-12 lg:py-16 xl:py-20 px-3 sm:px-0">
+        <div className="container mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 sm:mb-12 lg:mb-16 space-y-3 sm:space-y-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold">Latest Magazines</h2>
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto px-2 sm:px-0">
               Discover the latest creative works from talented artists around the world
             </p>
           </div>
 
           {magazines.length === 0 ? (
-            <div className="text-center py-16 sm:py-20">
-              <div className="max-w-md mx-auto space-y-6">
-                <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 flex items-center justify-center">
-                  <BookOpen className="h-12 w-12 text-muted-foreground" />
+            <div className="text-center py-12 sm:py-16 lg:py-20">
+              <div className="max-w-md mx-auto space-y-4 sm:space-y-6 px-4 sm:px-0">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full bg-gradient-to-r from-primary/20 to-secondary/20 flex items-center justify-center">
+                  <BookOpen className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-responsive-lg font-semibold">No magazines yet</h3>
-                  <p className="text-muted-foreground">Be the first to upload and share your creative work!</p>
+                  <h3 className="text-lg sm:text-xl font-semibold">No magazines yet</h3>
+                  <p className="text-muted-foreground text-sm sm:text-base">Be the first to upload and share your creative work!</p>
                 </div>
                 <Button 
                   onClick={() => navigate('/auth')}
-                  className="btn-modern bg-gradient-to-r from-primary to-primary/80"
+                  className="btn-modern bg-gradient-to-r from-primary to-primary/80 w-full sm:w-auto"
                 >
                   Get Started
                 </Button>
               </div>
             </div>
           ) : (
-            <div className="grid grid-auto-fit gap-6 sm:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
               {magazines.map((magazine) => (
                 <Card key={magazine.id} className="card-hover glass border-0 overflow-hidden group">
                   <div className="aspect-[3/4] relative overflow-hidden">
@@ -277,51 +279,53 @@ const Index = () => {
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-secondary/20 flex items-center justify-center group-hover:from-primary/30 group-hover:to-secondary/30 transition-all duration-500">
-                        <BookOpen className="h-16 w-16 text-primary/60 group-hover:scale-110 transition-transform duration-300" />
+                        <BookOpen className="h-12 w-12 sm:h-16 sm:w-16 text-primary/60 group-hover:scale-110 transition-transform duration-300" />
                       </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
-                  <CardContent className="p-4 sm:p-6 space-y-4">
-                    <h3 className="font-semibold text-responsive-base line-clamp-2 group-hover:text-primary transition-colors">
+                  <CardContent className="p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4">
+                    <h3 className="font-semibold text-sm sm:text-base line-clamp-2 group-hover:text-primary transition-colors">
                       {magazine.title}
                     </h3>
                     {magazine.description && (
-                      <p className="text-responsive-sm text-muted-foreground line-clamp-2">
+                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
                         {magazine.description}
                       </p>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-xs bg-gradient-to-r from-primary/10 to-primary/5 text-primary px-3 py-1 rounded-full border border-primary/20">
+                      <span className="text-xs bg-gradient-to-r from-primary/10 to-primary/5 text-primary px-2 sm:px-3 py-1 rounded-full border border-primary/20">
                         {magazine.category}
                       </span>
                       <button 
                         onClick={() => navigateToArtist(magazine.user_id)}
-                        className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors truncate max-w-20 sm:max-w-none"
                       >
                         by {magazine.profiles?.artist_name || 'Artist'}
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
                       {magazine.is_readable_online && (
                         <Button 
                           size="sm" 
-                          className="flex-1 btn-modern bg-gradient-to-r from-primary to-primary/80"
+                          className="flex-1 btn-modern bg-gradient-to-r from-primary to-primary/80 text-xs sm:text-sm py-1 sm:py-2"
                           onClick={() => handleMagazineAction(magazine, 'view')}
                         >
                           <Eye className="h-3 w-3 mr-1" />
-                          Read
+                          <span className="hidden xs:inline">Read</span>
+                          <span className="xs:hidden">Read</span>
                         </Button>
                       )}
                       {magazine.is_downloadable && (
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="flex-1 btn-modern"
+                          className="flex-1 btn-modern text-xs sm:text-sm py-1 sm:py-2"
                           onClick={() => handleMagazineAction(magazine, 'download')}
                         >
                           <Download className="h-3 w-3 mr-1" />
-                          Download
+                          <span className="hidden xs:inline">Download</span>
+                          <span className="xs:hidden">DL</span>
                         </Button>
                       )}
                       <ShareButton 
@@ -339,37 +343,37 @@ const Index = () => {
       </section>
 
       {/* Modern CTA Section */}
-      <section className="py-16 sm:py-20 lg:py-32 relative overflow-hidden">
+      <section className="py-12 sm:py-16 lg:py-20 xl:py-32 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/90 to-secondary" />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
-          <div className="max-w-4xl mx-auto space-y-8 text-white">
-            <h2 className="text-responsive-2xl font-bold">
+          <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 text-white">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold">
               Join Our Community of Creative Artists
             </h2>
-            <p className="text-responsive-lg opacity-90 leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl opacity-90 leading-relaxed px-2 sm:px-0">
               Showcase your work, connect with fellow artists, and inspire the world with your creativity.
               Sign up today and start sharing your digital magazines!
             </p>
             <Button 
               size="lg" 
               onClick={() => navigate('/auth')}
-              className="btn-modern bg-white text-primary hover:bg-white/90 px-8 py-6 text-base sm:text-lg h-auto font-semibold"
+              className="btn-modern bg-white text-primary hover:bg-white/90 px-6 sm:px-8 py-4 sm:py-6 text-sm sm:text-base lg:text-lg h-auto font-semibold w-full sm:w-auto"
             >
               Get Started
-              <Sparkles className="ml-2 h-5 w-5" />
+              <Sparkles className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
           </div>
         </div>
       </section>
 
       {/* Modern Footer */}
-      <footer className="glass border-t border-border/50 py-8 sm:py-12">
+      <footer className="glass border-t border-border/50 py-6 sm:py-8 lg:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-8 w-8" />
-            <span className="text-lg font-semibold text-primary">Be Inspired</span>
+          <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+            <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-6 w-6 sm:h-8 sm:w-8" />
+            <span className="text-base sm:text-lg font-semibold text-primary">Be Inspired</span>
           </div>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-xs sm:text-sm">
             &copy; {new Date().getFullYear()} Be Inspired. All rights reserved.
           </p>
         </div>
