@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import MagazineInfo from "@/components/MagazineInfo";
 import PDFControls from "@/components/PDFControls";
 import PDFViewer from "@/components/PDFViewer";
 
-// Set up PDF.js worker with CDN fallback
+// Set up PDF.js worker with proper URL
 if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
   pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 }
@@ -32,7 +33,7 @@ const MagazineViewer = () => {
   console.log('MagazineViewer - PDF.js version:', pdfjs.version);
   console.log('MagazineViewer - Worker source:', pdfjs.GlobalWorkerOptions.workerSrc);
 
-  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+  const onDocumentLoadSuccess = React.useCallback(({ numPages }: { numPages: number }) => {
     console.log('✅ Document loaded successfully with', numPages, 'pages');
     setNumPages(numPages);
     setPageNumber(1);
@@ -40,24 +41,16 @@ const MagazineViewer = () => {
       title: "PDF Loaded Successfully",
       description: `Document loaded with ${numPages} pages`,
     });
-  };
+  }, [toast]);
 
-  const onDocumentLoadError = (error: Error) => {
+  const onDocumentLoadError = React.useCallback((error: Error) => {
     console.error('❌ Document load error in MagazineViewer:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      magazineId: id,
-      fileUrl: magazine?.file_url,
-      userAgent: navigator.userAgent,
-      pdfJsVersion: pdfjs.version,
-      workerSrc: pdfjs.GlobalWorkerOptions.workerSrc
-    });
     
-    // More specific error handling
     let errorMessage = "Unable to load the PDF document.";
     
-    if (error.message.includes('CORS')) {
+    if (error.message.includes('worker') || error.message.includes('Worker')) {
+      errorMessage = "PDF worker initialization failed. Please refresh and try again.";
+    } else if (error.message.includes('CORS')) {
       errorMessage = "CORS error: The PDF file cannot be loaded due to cross-origin restrictions.";
     } else if (error.message.includes('PDF')) {
       errorMessage = "Invalid PDF file or corrupted document.";
@@ -70,27 +63,7 @@ const MagazineViewer = () => {
       description: errorMessage,
       variant: "destructive",
     });
-  };
-
-  const goToPrevPage = () => {
-    setPageNumber(prev => Math.max(prev - 1, 1));
-  };
-
-  const goToNextPage = () => {
-    setPageNumber(prev => Math.min(prev + 1, numPages));
-  };
-
-  const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.2, 3));
-  };
-
-  const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.2, 0.5));
-  };
-
-  const resetZoom = () => {
-    setScale(1.0);
-  };
+  }, [toast]);
 
   if (loading) {
     return (

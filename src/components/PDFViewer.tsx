@@ -29,7 +29,8 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     pageNumber,
     scale,
     retryCount,
-    hasError
+    hasError,
+    pdfBlob: pdfBlob ? 'loaded' : 'null'
   });
 
   // Fetch PDF as blob for better compatibility
@@ -38,6 +39,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 
     try {
       setIsLoading(true);
+      setHasError(false);
       console.log('🔄 Fetching PDF as blob from:', fileUrl);
       
       const response = await fetch(fileUrl, {
@@ -62,7 +64,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 
       const blobUrl = URL.createObjectURL(blob);
       setPdfBlob(blobUrl);
-      setHasError(false);
       
     } catch (error) {
       console.error('❌ Failed to fetch PDF as blob:', error);
@@ -82,36 +83,38 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         URL.revokeObjectURL(pdfBlob);
       }
     };
-  }, [fetchPdfAsBlob, fileUrl]);
+  }, [fetchPdfAsBlob]);
 
-  const handleLoadSuccess = (pdf: { numPages: number }) => {
+  const handleLoadSuccess = React.useCallback((pdf: { numPages: number }) => {
     console.log('✅ PDF loaded successfully with', pdf.numPages, 'pages');
     setHasError(false);
     setRetryCount(0);
     onLoadSuccess(pdf);
-  };
+  }, [onLoadSuccess]);
 
-  const handleLoadError = (error: Error) => {
+  const handleLoadError = React.useCallback((error: Error) => {
     console.error('❌ PDF.js loading error:', error);
     setHasError(true);
     onLoadError(error);
-  };
+  }, [onLoadError]);
 
   const handleRetry = () => {
     console.log('🔄 Retrying PDF load, attempt:', retryCount + 1);
     setRetryCount(prev => prev + 1);
     setHasError(false);
+    if (pdfBlob) {
+      URL.revokeObjectURL(pdfBlob);
+    }
     setPdfBlob(null);
     fetchPdfAsBlob();
   };
 
-  // Enhanced PDF.js options
+  // Stable PDF.js options to prevent re-renders
   const options = React.useMemo(() => ({
     cMapUrl: `https://unpkg.com/pdfjs-dist@3.11.174/cmaps/`,
     cMapPacked: true,
     standardFontDataUrl: `https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/`,
-    enableXfa: true,
-    verbosity: 1,
+    verbosity: 0, // Reduce verbosity to minimize console noise
   }), []);
 
   if (isLoading) {
@@ -180,14 +183,13 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
           </div>
         }
         error={null}
-        key={`${fileUrl}-${retryCount}`}
       >
         <Page
           pageNumber={pageNumber}
           scale={scale}
           className="shadow-lg mx-auto"
-          renderTextLayer={true}
-          renderAnnotationLayer={true}
+          renderTextLayer={false}
+          renderAnnotationLayer={false}
           loading={
             <div className="flex items-center justify-center h-96 bg-white shadow-lg">
               <div className="text-center">
