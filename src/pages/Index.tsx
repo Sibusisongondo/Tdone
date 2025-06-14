@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -140,7 +139,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <BookOpen className="h-16 w-16 text-primary mx-auto animate-pulse" />
+          <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-24 w-24 mx-auto animate-pulse" />
           <div className="space-y-2">
             <div className="h-4 bg-muted rounded w-32 mx-auto animate-pulse" />
             <div className="h-3 bg-muted/60 rounded w-24 mx-auto animate-pulse" />
@@ -158,7 +157,7 @@ const Index = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <BookOpen className="h-8 w-8 text-primary animate-float" />
+                <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-10 w-10 animate-float" />
                 <Sparkles className="h-4 w-4 text-primary/60 absolute -top-1 -right-1 animate-pulse" />
               </div>
               <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
@@ -366,7 +365,7 @@ const Index = () => {
       <footer className="glass border-t border-border/50 py-8 sm:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <BookOpen className="h-6 w-6 text-primary" />
+            <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-8 w-8" />
             <span className="text-lg font-semibold text-primary">Be Inspired</span>
           </div>
           <p className="text-muted-foreground text-sm">
