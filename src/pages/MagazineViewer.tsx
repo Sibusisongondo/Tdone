@@ -132,16 +132,36 @@ const MagazineViewer = () => {
           </CardHeader>
         </Card>
 
-        {/* PDF Viewer */}
+        {/* PDF Viewer - Mobile Optimized */}
         <Card>
           <CardContent className="p-0">
             {magazine.file_url ? (
-              <iframe
-                src={`${magazine.file_url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
-                className="w-full h-[80vh] border-0"
-                title={magazine.title}
-                style={{ minHeight: '600px' }}
-              />
+              <div className="w-full">
+                {/* Mobile-friendly PDF viewer */}
+                <object
+                  data={`${magazine.file_url}#toolbar=0&navpanes=0&scrollbar=1&view=FitH&zoom=page-width`}
+                  type="application/pdf"
+                  className="w-full h-[80vh] min-h-[600px]"
+                  style={{ border: 'none' }}
+                >
+                  {/* Fallback for mobile browsers that don't support object tag */}
+                  <div className="w-full h-[80vh] min-h-[600px] flex flex-col items-center justify-center p-4 bg-muted/10">
+                    <BookOpen className="h-16 w-16 text-primary mb-4" />
+                    <p className="text-center text-muted-foreground mb-4">
+                      Your browser doesn't support PDF viewing. 
+                    </p>
+                    <Button 
+                      onClick={() => window.open(magazine.file_url + '#view=FitH', '_blank')}
+                      className="mb-2"
+                    >
+                      Open in New Tab
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground">
+                      This will open the magazine in a new tab for better viewing on mobile.
+                    </p>
+                  </div>
+                </object>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-96">
                 <p className="text-muted-foreground">Unable to load PDF viewer.</p>
