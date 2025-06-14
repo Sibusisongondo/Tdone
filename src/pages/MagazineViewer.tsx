@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,16 +25,25 @@ const MagazineViewer = () => {
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
 
+  console.log('MagazineViewer - Current magazine:', magazine);
+  console.log('MagazineViewer - Loading state:', loading);
+
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    console.log('Document loaded successfully with', numPages, 'pages');
     setNumPages(numPages);
     setPageNumber(1);
+    toast({
+      title: "PDF Loaded",
+      description: `Successfully loaded ${numPages} pages`,
+    });
   };
 
   const onDocumentLoadError = (error: Error) => {
-    console.error('Error loading PDF:', error);
+    console.error('Document load error in MagazineViewer:', error);
+    console.error('Magazine file URL:', magazine?.file_url);
     toast({
-      title: "Error",
-      description: "Failed to load the PDF document.",
+      title: "PDF Loading Error",
+      description: "Unable to load the PDF document. Please check your internet connection and try again.",
       variant: "destructive",
     });
   };
@@ -85,6 +93,13 @@ const MagazineViewer = () => {
     );
   }
 
+  console.log('Rendering MagazineViewer with magazine:', {
+    id: magazine.id,
+    title: magazine.title,
+    file_url: magazine.file_url,
+    file_size: magazine.file_size
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <MagazineHeader onBackToHome={() => navigate('/')}>
@@ -128,7 +143,13 @@ const MagazineViewer = () => {
               </div>
             ) : (
               <div className="flex items-center justify-center h-96">
-                <p className="text-muted-foreground">Unable to load PDF viewer.</p>
+                <div className="text-center">
+                  <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No PDF file available for this magazine.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Please contact support if you believe this is an error.
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>
