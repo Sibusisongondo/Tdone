@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { BookOpen, AlertCircle, ExternalLink, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -27,140 +26,114 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1);
-  const [loadingMessage, setLoadingMessage] = useState('Loading flipbook...');
+  const [loadingMessage, setLoadingMessage] = useState('Initializing...');
 
   console.log('FlipBookViewer - Rendering with fileUrl:', fileUrl);
 
   useEffect(() => {
-    if (!fileUrl || !flipbookRef.current) return;
+    if (!fileUrl || !flipbookRef.current) {
+      console.log('No fileUrl or flipbookRef, skipping initialization');
+      return;
+    }
 
-    const loadFlipBook = async () => {
+    const initializeFlipBook = async () => {
       try {
+        console.log('Starting FlipBook initialization...');
         setIsLoading(true);
         setHasError(false);
         setLoadingMessage('Loading jQuery...');
 
-        // Check if jQuery is already loaded
-        if (!window.$ && !window.jQuery) {
+        // Load jQuery if not present
+        if (typeof window.$ === 'undefined') {
           console.log('Loading jQuery...');
-          const jqueryScript = document.createElement('script');
-          jqueryScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js';
-          jqueryScript.crossOrigin = 'anonymous';
-          document.head.appendChild(jqueryScript);
-          
-          await new Promise((resolve, reject) => {
-            jqueryScript.onload = () => {
-              console.log('✅ jQuery loaded successfully');
-              resolve(true);
-            };
-            jqueryScript.onerror = () => {
-              console.error('❌ Failed to load jQuery');
-              reject(new Error('Failed to load jQuery'));
-            };
-          });
+          await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js');
+          console.log('✅ jQuery loaded');
+        } else {
+          console.log('jQuery already available');
         }
 
         setLoadingMessage('Loading Turn.js...');
 
-        // Check if Turn.js is already loaded
-        if (!window.$.fn.turn) {
+        // Load Turn.js if not present
+        if (!window.$.fn || !window.$.fn.turn) {
           console.log('Loading Turn.js...');
-          const turnScript = document.createElement('script');
-          turnScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js';
-          turnScript.crossOrigin = 'anonymous';
-          document.head.appendChild(turnScript);
-
-          await new Promise((resolve, reject) => {
-            turnScript.onload = () => {
-              console.log('✅ Turn.js loaded successfully');
-              resolve(true);
-            };
-            turnScript.onerror = () => {
-              console.error('❌ Failed to load Turn.js');
-              reject(new Error('Failed to load Turn.js'));
-            };
-          });
+          await loadScript('https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js');
+          console.log('✅ Turn.js loaded');
+        } else {
+          console.log('Turn.js already available');
         }
 
-        setLoadingMessage('Initializing flipbook...');
+        setLoadingMessage('Creating flipbook pages...');
 
-        // For this demo, we'll create a simple flipbook with placeholder pages
-        // In a real implementation, you'd convert PDF pages to images first
-        const demoPages = 12; // Simulate a 12-page magazine
+        // Create demo pages
+        const demoPages = 10;
         setNumPages(demoPages);
 
-        // Create flipbook HTML
         if (flipbookRef.current) {
-          console.log('Creating flipbook pages...');
+          // Clear existing content
           flipbookRef.current.innerHTML = '';
           
+          // Create pages
           for (let i = 1; i <= demoPages; i++) {
             const page = document.createElement('div');
             page.className = 'page';
             page.style.cssText = `
-              width: 100%;
-              height: 100%;
-              background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+              width: 400px;
+              height: 300px;
+              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: 24px;
-              color: #333;
-              border: 1px solid #ddd;
+              font-family: system-ui, -apple-system, sans-serif;
+              color: #334155;
+              border: 1px solid #cbd5e1;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
               position: relative;
             `;
+            
             page.innerHTML = `
-              <div style="text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 20px;">📖</div>
-                <div style="font-weight: bold; margin-bottom: 10px;">Page ${i}</div>
-                <div style="font-size: 14px; margin-top: 10px; opacity: 0.7;">
-                  ${fileUrl ? 'PDF Content Preview' : 'Demo Content'}
-                </div>
-                <div style="position: absolute; bottom: 10px; right: 10px; font-size: 12px; opacity: 0.5;">
-                  ${i}
-                </div>
+              <div style="text-align: center; padding: 20px;">
+                <div style="font-size: 32px; margin-bottom: 15px;">📖</div>
+                <div style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">Page ${i}</div>
+                <div style="font-size: 12px; opacity: 0.7; margin-bottom: 15px;">Demo Magazine Content</div>
+                <div style="font-size: 10px; opacity: 0.5; position: absolute; bottom: 8px; right: 12px;">${i}</div>
               </div>
             `;
+            
             flipbookRef.current.appendChild(page);
           }
 
-          console.log('Initializing Turn.js...');
+          setLoadingMessage('Initializing Turn.js...');
+
+          // Wait a moment for DOM to be ready
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          console.log('Initializing Turn.js with jQuery:', typeof window.$);
           
-          // Initialize Turn.js with error handling
-          try {
-            window.$(flipbookRef.current).turn({
-              width: 800,
-              height: 600,
-              autoCenter: true,
-              gradients: true,
-              elevation: 50,
-              display: 'double',
-              when: {
-                turned: function(event: any, page: number) {
-                  console.log('Turned to page:', page);
-                  setCurrentPage(page);
-                },
-                start: function(event: any, pageObject: any) {
-                  console.log('Turn.js started successfully');
-                }
+          // Initialize Turn.js
+          window.$(flipbookRef.current).turn({
+            width: 800,
+            height: 300,
+            autoCenter: true,
+            gradients: true,
+            elevation: 50,
+            display: 'double',
+            when: {
+              turned: function(event: any, page: number) {
+                console.log('Page turned to:', page);
+                setCurrentPage(page);
+              },
+              start: function() {
+                console.log('Turn.js initialization complete');
               }
-            });
-
-            // Apply initial scale
-            window.$(flipbookRef.current).css({
-              transform: `scale(${scale})`,
-              transformOrigin: 'center top'
-            });
-
-            console.log('✅ FlipBook initialized successfully');
-            setIsLoading(false);
-            
-            if (onLoadSuccess) {
-              onLoadSuccess({ numPages: demoPages });
             }
-          } catch (turnError) {
-            console.error('❌ Turn.js initialization error:', turnError);
-            throw new Error('Failed to initialize Turn.js');
+          });
+
+          console.log('✅ FlipBook initialized successfully');
+          setIsLoading(false);
+          
+          if (onLoadSuccess) {
+            onLoadSuccess({ numPages: demoPages });
           }
         }
 
@@ -168,6 +141,7 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
         console.error('❌ FlipBook initialization error:', error);
         setHasError(true);
         setIsLoading(false);
+        setLoadingMessage('Failed to load');
         
         if (onLoadError) {
           onLoadError(error as Error);
@@ -175,13 +149,12 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
       }
     };
 
-    // Add a small delay to ensure the DOM is ready
-    const timeoutId = setTimeout(loadFlipBook, 100);
+    // Small delay to ensure DOM is ready
+    const timeoutId = setTimeout(initializeFlipBook, 200);
 
-    // Cleanup
     return () => {
       clearTimeout(timeoutId);
-      if (flipbookRef.current && window.$ && window.$.fn.turn) {
+      if (flipbookRef.current && window.$ && window.$.fn && window.$.fn.turn) {
         try {
           window.$(flipbookRef.current).turn('destroy');
         } catch (e) {
@@ -190,6 +163,18 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
       }
     };
   }, [fileUrl, onLoadSuccess, onLoadError]);
+
+  // Helper function to load scripts
+  const loadScript = (src: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.crossOrigin = 'anonymous';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.appendChild(script);
+    });
+  };
 
   useEffect(() => {
     // Update scale when it changes
@@ -244,7 +229,7 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
           Failed to load flipbook
         </h3>
         <p className="text-sm text-muted-foreground text-center mb-4">
-          The flipbook could not be displayed. This might be due to network issues or library loading problems.
+          Could not initialize the flipbook viewer. Try refreshing the page.
         </p>
         <Button 
           variant="outline"
@@ -263,8 +248,8 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
         <div className="text-center">
           <BookOpen className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
           <p className="text-muted-foreground">{loadingMessage}</p>
-          <div className="mt-4 text-xs text-muted-foreground">
-            This may take a few moments while we load the required libraries...
+          <div className="mt-2 text-xs text-muted-foreground opacity-70">
+            Setting up flipbook viewer...
           </div>
         </div>
       </div>
@@ -301,12 +286,13 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
       </div>
 
       {/* FlipBook Container */}
-      <div className="flex justify-center p-8 bg-gray-100 min-h-[700px]">
+      <div className="flex justify-center p-8 bg-gray-50 min-h-[400px]">
         <div 
           ref={flipbookRef}
           id="flipbook"
           className="flipbook"
           style={{
+            transform: `scale(${scale})`,
             transformOrigin: 'center top',
             transition: 'transform 0.3s ease'
           }}
@@ -315,8 +301,8 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
 
       <div className="mt-4 p-4 bg-muted/30 rounded-lg">
         <p className="text-sm text-muted-foreground text-center">
-          📖 Click on the corners of pages to flip them, or use the navigation controls above. 
-          This is a demo flipbook - in production, PDF pages would be converted to images for display.
+          📖 Click on page corners to flip pages, or use the navigation controls above. 
+          This demo shows the flipbook functionality - in production, actual PDF pages would be displayed.
         </p>
       </div>
     </div>

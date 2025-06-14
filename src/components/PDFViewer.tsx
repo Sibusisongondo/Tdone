@@ -37,12 +37,11 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     }
   }, [onLoadSuccess]);
 
-  // Handle worker setup errors by setting error state
-  const handleWorkerError = React.useCallback(() => {
-    console.error('❌ PDF worker failed to load');
+  const handleDocumentLoadError = React.useCallback((error: any) => {
+    console.error('❌ PDF document load error:', error);
     setHasError(true);
     if (onLoadError) {
-      onLoadError(new Error('Failed to load PDF worker'));
+      onLoadError(error);
     }
   }, [onLoadError]);
 
@@ -80,14 +79,12 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
 
   return (
     <div className="w-full bg-white" style={{ minHeight: '600px' }}>
-      <Worker 
-        workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"
-        onError={handleWorkerError}
-      >
+      <Worker workerUrl="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js">
         <Viewer
           fileUrl={fileUrl}
           plugins={[defaultLayoutPluginInstance]}
           onDocumentLoad={handleDocumentLoad}
+          onDocumentLoadError={handleDocumentLoadError}
         />
       </Worker>
     </div>
