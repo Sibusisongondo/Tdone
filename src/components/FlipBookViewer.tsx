@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 declare global {
   interface Window {
     $: any;
+    jQuery: any;
   }
 }
 
@@ -26,6 +27,7 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1);
+  const [loadingMessage, setLoadingMessage] = useState('Loading flipbook...');
 
   console.log('FlipBookViewer - Rendering with fileUrl:', fileUrl);
 
@@ -36,32 +38,51 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
       try {
         setIsLoading(true);
         setHasError(false);
+        setLoadingMessage('Loading jQuery...');
 
-        // Load jQuery and Turn.js if not already loaded
-        if (!window.$) {
+        // Check if jQuery is already loaded
+        if (!window.$ && !window.jQuery) {
+          console.log('Loading jQuery...');
           const jqueryScript = document.createElement('script');
           jqueryScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js';
+          jqueryScript.crossOrigin = 'anonymous';
           document.head.appendChild(jqueryScript);
           
-          await new Promise((resolve) => {
-            jqueryScript.onload = resolve;
+          await new Promise((resolve, reject) => {
+            jqueryScript.onload = () => {
+              console.log('✅ jQuery loaded successfully');
+              resolve(true);
+            };
+            jqueryScript.onerror = () => {
+              console.error('❌ Failed to load jQuery');
+              reject(new Error('Failed to load jQuery'));
+            };
           });
         }
 
-        // Load Turn.js
-        const turnScript = document.createElement('script');
-        turnScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js';
-        document.head.appendChild(turnScript);
+        setLoadingMessage('Loading Turn.js...');
 
-        await new Promise((resolve) => {
-          turnScript.onload = resolve;
-        });
+        // Check if Turn.js is already loaded
+        if (!window.$.fn.turn) {
+          console.log('Loading Turn.js...');
+          const turnScript = document.createElement('script');
+          turnScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js';
+          turnScript.crossOrigin = 'anonymous';
+          document.head.appendChild(turnScript);
 
-        // Load Turn.js CSS
-        const turnCSS = document.createElement('link');
-        turnCSS.rel = 'stylesheet';
-        turnCSS.href = 'https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/css/jquery.turn.css';
-        document.head.appendChild(turnCSS);
+          await new Promise((resolve, reject) => {
+            turnScript.onload = () => {
+              console.log('✅ Turn.js loaded successfully');
+              resolve(true);
+            };
+            turnScript.onerror = () => {
+              console.error('❌ Failed to load Turn.js');
+              reject(new Error('Failed to load Turn.js'));
+            };
+          });
+        }
+
+        setLoadingMessage('Initializing flipbook...');
 
         // For this demo, we'll create a simple flipbook with placeholder pages
         // In a real implementation, you'd convert PDF pages to images first
@@ -70,6 +91,7 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
 
         // Create flipbook HTML
         if (flipbookRef.current) {
+          console.log('Creating flipbook pages...');
           flipbookRef.current.innerHTML = '';
           
           for (let i = 1; i <= demoPages; i++) {
@@ -85,46 +107,61 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
               font-size: 24px;
               color: #333;
               border: 1px solid #ddd;
+              position: relative;
             `;
             page.innerHTML = `
               <div style="text-align: center;">
                 <div style="font-size: 48px; margin-bottom: 20px;">📖</div>
-                <div>Page ${i}</div>
+                <div style="font-weight: bold; margin-bottom: 10px;">Page ${i}</div>
                 <div style="font-size: 14px; margin-top: 10px; opacity: 0.7;">
-                  ${fileUrl ? 'PDF Content Here' : 'Demo Content'}
+                  ${fileUrl ? 'PDF Content Preview' : 'Demo Content'}
+                </div>
+                <div style="position: absolute; bottom: 10px; right: 10px; font-size: 12px; opacity: 0.5;">
+                  ${i}
                 </div>
               </div>
             `;
             flipbookRef.current.appendChild(page);
           }
 
-          // Initialize Turn.js
-          window.$(flipbookRef.current).turn({
-            width: 800,
-            height: 600,
-            autoCenter: true,
-            gradients: true,
-            elevation: 50,
-            when: {
-              turned: function(event: any, page: number) {
-                setCurrentPage(page);
-                console.log('Turned to page:', page);
+          console.log('Initializing Turn.js...');
+          
+          // Initialize Turn.js with error handling
+          try {
+            window.$(flipbookRef.current).turn({
+              width: 800,
+              height: 600,
+              autoCenter: true,
+              gradients: true,
+              elevation: 50,
+              display: 'double',
+              when: {
+                turned: function(event: any, page: number) {
+                  console.log('Turned to page:', page);
+                  setCurrentPage(page);
+                },
+                start: function(event: any, pageObject: any) {
+                  console.log('Turn.js started successfully');
+                }
               }
+            });
+
+            // Apply initial scale
+            window.$(flipbookRef.current).css({
+              transform: `scale(${scale})`,
+              transformOrigin: 'center top'
+            });
+
+            console.log('✅ FlipBook initialized successfully');
+            setIsLoading(false);
+            
+            if (onLoadSuccess) {
+              onLoadSuccess({ numPages: demoPages });
             }
-          });
-
-          // Apply scale
-          window.$(flipbookRef.current).css({
-            transform: `scale(${scale})`,
-            transformOrigin: 'center top'
-          });
-        }
-
-        console.log('✅ FlipBook initialized successfully');
-        setIsLoading(false);
-        
-        if (onLoadSuccess) {
-          onLoadSuccess({ numPages: demoPages });
+          } catch (turnError) {
+            console.error('❌ Turn.js initialization error:', turnError);
+            throw new Error('Failed to initialize Turn.js');
+          }
         }
 
       } catch (error) {
@@ -138,11 +175,13 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
       }
     };
 
-    loadFlipBook();
+    // Add a small delay to ensure the DOM is ready
+    const timeoutId = setTimeout(loadFlipBook, 100);
 
     // Cleanup
     return () => {
-      if (flipbookRef.current && window.$) {
+      clearTimeout(timeoutId);
+      if (flipbookRef.current && window.$ && window.$.fn.turn) {
         try {
           window.$(flipbookRef.current).turn('destroy');
         } catch (e) {
@@ -154,13 +193,13 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
 
   useEffect(() => {
     // Update scale when it changes
-    if (flipbookRef.current && window.$) {
+    if (flipbookRef.current && window.$ && !isLoading) {
       window.$(flipbookRef.current).css({
         transform: `scale(${scale})`,
         transformOrigin: 'center top'
       });
     }
-  }, [scale]);
+  }, [scale, isLoading]);
 
   const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.2, 2));
@@ -175,13 +214,13 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
   };
 
   const goToNextPage = () => {
-    if (flipbookRef.current && window.$) {
+    if (flipbookRef.current && window.$ && window.$.fn.turn) {
       window.$(flipbookRef.current).turn('next');
     }
   };
 
   const goToPrevPage = () => {
-    if (flipbookRef.current && window.$) {
+    if (flipbookRef.current && window.$ && window.$.fn.turn) {
       window.$(flipbookRef.current).turn('previous');
     }
   };
@@ -205,7 +244,7 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
           Failed to load flipbook
         </h3>
         <p className="text-sm text-muted-foreground text-center mb-4">
-          The flipbook could not be displayed. Try opening the original file.
+          The flipbook could not be displayed. This might be due to network issues or library loading problems.
         </p>
         <Button 
           variant="outline"
@@ -223,7 +262,10 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <BookOpen className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
-          <p className="text-muted-foreground">Loading flipbook...</p>
+          <p className="text-muted-foreground">{loadingMessage}</p>
+          <div className="mt-4 text-xs text-muted-foreground">
+            This may take a few moments while we load the required libraries...
+          </div>
         </div>
       </div>
     );
