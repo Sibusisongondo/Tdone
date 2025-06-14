@@ -1,7 +1,13 @@
 
 import React from 'react';
+import { Viewer, Worker } from '@react-pdf-viewer/core';
+import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import { BookOpen, ExternalLink, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+
+// Import CSS
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
 interface PDFViewerProps {
   fileUrl: string;
@@ -16,29 +22,28 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   onLoadSuccess,
   onLoadError
 }) => {
-  const [isLoading, setIsLoading] = React.useState(true);
   const [hasError, setHasError] = React.useState(false);
 
   console.log('PDFViewer - Rendering with fileUrl:', fileUrl);
 
-  const handleLoad = () => {
-    console.log('✅ PDF iframe loaded successfully');
-    setIsLoading(false);
-    setHasError(false);
-    // Call onLoadSuccess with a default value since we can't determine page count with iframe
-    if (onLoadSuccess) {
-      onLoadSuccess({ numPages: 1 });
-    }
-  };
+  // Create default layout plugin
+  const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
-  const handleError = () => {
-    console.error('❌ PDF iframe failed to load');
-    setIsLoading(false);
+  const handleDocumentLoad = React.useCallback((e: any) => {
+    console.log('✅ PDF document loaded successfully');
+    setHasError(false);
+    if (onLoadSuccess) {
+      onLoadSuccess({ numPages: e.doc.numPages });
+    }
+  }, [onLoadSuccess]);
+
+  const handleLoadError = React.useCallback((error: any) => {
+    console.error('❌ PDF document failed to load:', error);
     setHasError(true);
     if (onLoadError) {
-      onLoadError(new Error('Failed to load PDF in iframe'));
+      onLoadError(new Error('Failed to load PDF document'));
     }
-  };
+  }, [onLoadError]);
 
   if (!fileUrl) {
     return (
@@ -59,7 +64,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
           Failed to load PDF document
         </h3>
         <p className="text-sm text-muted-foreground text-center mb-4">
-          The PDF could not be displayed in the browser viewer.
+          The PDF could not be displayed. Try opening it in a new tab.
         </p>
         <Button 
           variant="outline"
@@ -73,37 +78,15 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   }
 
   return (
-    <div className="relative w-full bg-gray-50">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
-          <div className="text-center">
-            <BookOpen className="h-8 w-8 text-primary animate-pulse mx-auto mb-2" />
-            <span className="text-sm text-muted-foreground">Loading PDF...</span>
-          </div>
-        </div>
-      )}
-      
-      <iframe
-        src={fileUrl}
-        width="100%"
-        height="800px"
-        style={{ border: 'none', minHeight: '600px' }}
-        onLoad={handleLoad}
-        onError={handleError}
-        title="PDF Viewer"
-        className="w-full"
-      />
-      
-      <div className="p-2 bg-muted/30 text-center">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => window.open(fileUrl, '_blank')}
-        >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Open in Full Screen
-        </Button>
-      </div>
+    <div className="w-full bg-white" style={{ minHeight: '600px' }}>
+      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+        <Viewer
+          fileUrl={fileUrl}
+          plugins={[defaultLayoutPluginInstance]}
+          onDocumentLoad={handleDocumentLoad}
+          onLoadError={handleLoadError}
+        />
+      </Worker>
     </div>
   );
 };

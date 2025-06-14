@@ -20,10 +20,10 @@ const MagazineViewer = () => {
   console.log('MagazineViewer - Loading state:', loading);
 
   const onDocumentLoadSuccess = React.useCallback(({ numPages }: { numPages: number }) => {
-    console.log('✅ Document loaded successfully');
+    console.log('✅ Document loaded successfully with', numPages, 'pages');
     toast({
       title: "PDF Loaded Successfully",
-      description: "Document is ready for viewing",
+      description: `Document loaded with ${numPages} pages`,
     });
   }, [toast]);
 
@@ -100,8 +100,8 @@ const MagazineViewer = () => {
 
         <div className="mt-4 p-4 bg-muted/30 rounded-lg">
           <p className="text-sm text-muted-foreground text-center">
-            📖 Use your browser's built-in PDF controls for navigation and zoom. 
-            Click "Open in Full Screen" for the best reading experience.
+            📖 Use the toolbar above the document for navigation, zoom, and other controls. 
+            The viewer includes search, page navigation, and full-screen options.
           </p>
         </div>
       </div>
