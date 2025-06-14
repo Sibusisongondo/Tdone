@@ -1,215 +1,109 @@
 
 import React from 'react';
-import { Document, Page } from 'react-pdf';
-import { BookOpen, RefreshCw, AlertCircle, ExternalLink } from 'lucide-react';
+import { BookOpen, ExternalLink, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 interface PDFViewerProps {
   fileUrl: string;
-  pageNumber: number;
-  scale: number;
-  onLoadSuccess: ({ numPages }: { numPages: number }) => void;
-  onLoadError: (error: Error) => void;
+  pageNumber?: number;
+  scale?: number;
+  onLoadSuccess?: ({ numPages }: { numPages: number }) => void;
+  onLoadError?: (error: Error) => void;
 }
 
 const PDFViewer: React.FC<PDFViewerProps> = ({
   fileUrl,
-  pageNumber,
-  scale,
   onLoadSuccess,
   onLoadError
 }) => {
-  const [retryCount, setRetryCount] = React.useState(0);
-  const [hasError, setHasError] = React.useState(false);
-  const [pdfBlob, setPdfBlob] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [hasError, setHasError] = React.useState(false);
 
-  console.log('PDFViewer - Rendering with props:', {
-    fileUrl,
-    pageNumber,
-    scale,
-    retryCount,
-    hasError,
-    pdfBlob: pdfBlob ? 'loaded' : 'null'
-  });
+  console.log('PDFViewer - Rendering with fileUrl:', fileUrl);
 
-  // Fetch PDF as blob for better compatibility
-  const fetchPdfAsBlob = React.useCallback(async () => {
-    if (!fileUrl) return;
-
-    try {
-      setIsLoading(true);
-      setHasError(false);
-      console.log('🔄 Fetching PDF as blob from:', fileUrl);
-      
-      const response = await fetch(fileUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/pdf,*/*',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const contentType = response.headers.get('content-type');
-      console.log('📄 Response content-type:', contentType);
-
-      const blob = await response.blob();
-      console.log('✅ PDF blob created:', {
-        size: blob.size,
-        type: blob.type
-      });
-
-      const blobUrl = URL.createObjectURL(blob);
-      setPdfBlob(blobUrl);
-      
-    } catch (error) {
-      console.error('❌ Failed to fetch PDF as blob:', error);
-      setHasError(true);
-      onLoadError(error as Error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fileUrl, onLoadError]);
-
-  React.useEffect(() => {
-    fetchPdfAsBlob();
-    
-    // Cleanup blob URL when component unmounts or fileUrl changes
-    return () => {
-      if (pdfBlob) {
-        URL.revokeObjectURL(pdfBlob);
-      }
-    };
-  }, [fetchPdfAsBlob]);
-
-  const handleLoadSuccess = React.useCallback((pdf: { numPages: number }) => {
-    console.log('✅ PDF loaded successfully with', pdf.numPages, 'pages');
+  const handleLoad = () => {
+    console.log('✅ PDF iframe loaded successfully');
+    setIsLoading(false);
     setHasError(false);
-    setRetryCount(0);
-    onLoadSuccess(pdf);
-  }, [onLoadSuccess]);
-
-  const handleLoadError = React.useCallback((error: Error) => {
-    console.error('❌ PDF.js loading error:', error);
-    setHasError(true);
-    onLoadError(error);
-  }, [onLoadError]);
-
-  const handleRetry = () => {
-    console.log('🔄 Retrying PDF load, attempt:', retryCount + 1);
-    setRetryCount(prev => prev + 1);
-    setHasError(false);
-    if (pdfBlob) {
-      URL.revokeObjectURL(pdfBlob);
+    // Call onLoadSuccess with a default value since we can't determine page count with iframe
+    if (onLoadSuccess) {
+      onLoadSuccess({ numPages: 1 });
     }
-    setPdfBlob(null);
-    fetchPdfAsBlob();
   };
 
-  // Stable PDF.js options to prevent re-renders
-  const options = React.useMemo(() => ({
-    cMapUrl: `https://unpkg.com/pdfjs-dist@3.11.174/cmaps/`,
-    cMapPacked: true,
-    standardFontDataUrl: `https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/`,
-    verbosity: 0, // Reduce verbosity to minimize console noise
-  }), []);
+  const handleError = () => {
+    console.error('❌ PDF iframe failed to load');
+    setIsLoading(false);
+    setHasError(true);
+    if (onLoadError) {
+      onLoadError(new Error('Failed to load PDF in iframe'));
+    }
+  };
 
-  if (isLoading) {
+  if (!fileUrl) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 p-8">
-        <BookOpen className="h-8 w-8 text-primary animate-pulse mb-2" />
-        <span className="text-sm text-muted-foreground">
-          Loading PDF... {retryCount > 0 && `(Attempt ${retryCount + 1})`}
-        </span>
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">No PDF file available.</p>
+        </div>
       </div>
     );
   }
 
-  if (hasError || !pdfBlob) {
+  if (hasError) {
     return (
       <div className="flex flex-col items-center justify-center h-96 p-8">
         <AlertCircle className="h-12 w-12 text-destructive mb-4" />
         <h3 className="text-lg font-semibold text-destructive text-center mb-2">
           Failed to load PDF document
         </h3>
-        <div className="text-sm text-muted-foreground text-center mb-4 max-w-md space-y-2">
-          <p>This could be due to:</p>
-          <ul className="text-left list-disc list-inside space-y-1">
-            <li>CORS restrictions on Supabase storage</li>
-            <li>PDF.js compatibility issues</li>
-            <li>Network connectivity issues</li>
-            <li>Invalid or corrupted PDF file</li>
-          </ul>
-          {fileUrl && (
-            <div className="mt-2 p-2 bg-muted rounded text-xs break-all">
-              <strong>File URL:</strong> {fileUrl}
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col gap-2">
-          <Button onClick={handleRetry} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Try Again {retryCount > 0 && `(Attempt ${retryCount + 1})`}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => window.open(fileUrl, '_blank')}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Open in New Tab
-          </Button>
-        </div>
+        <p className="text-sm text-muted-foreground text-center mb-4">
+          The PDF could not be displayed in the browser viewer.
+        </p>
+        <Button 
+          variant="outline"
+          onClick={() => window.open(fileUrl, '_blank')}
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Open in New Tab
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center p-4 overflow-auto bg-gray-50 min-h-96">
-      <Document
-        file={pdfBlob}
-        onLoadSuccess={handleLoadSuccess}
-        onLoadError={handleLoadError}
-        options={options}
-        loading={
-          <div className="flex flex-col items-center justify-center h-96">
-            <BookOpen className="h-8 w-8 text-primary animate-pulse mb-2" />
-            <span className="text-sm text-muted-foreground">
-              Loading PDF... {retryCount > 0 && `(Attempt ${retryCount + 1})`}
-            </span>
+    <div className="relative w-full bg-gray-50">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
+          <div className="text-center">
+            <BookOpen className="h-8 w-8 text-primary animate-pulse mx-auto mb-2" />
+            <span className="text-sm text-muted-foreground">Loading PDF...</span>
           </div>
-        }
-        error={null}
-      >
-        <Page
-          pageNumber={pageNumber}
-          scale={scale}
-          className="shadow-lg mx-auto"
-          renderTextLayer={false}
-          renderAnnotationLayer={false}
-          loading={
-            <div className="flex items-center justify-center h-96 bg-white shadow-lg">
-              <div className="text-center">
-                <BookOpen className="h-8 w-8 text-primary animate-pulse mx-auto mb-2" />
-                <span className="text-sm text-muted-foreground">
-                  Rendering page {pageNumber}...
-                </span>
-              </div>
-            </div>
-          }
-          error={
-            <div className="flex items-center justify-center h-96 bg-white shadow-lg">
-              <div className="text-center">
-                <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
-                <p className="text-destructive text-sm">Failed to render page {pageNumber}</p>
-              </div>
-            </div>
-          }
-        />
-      </Document>
+        </div>
+      )}
+      
+      <iframe
+        src={fileUrl}
+        width="100%"
+        height="800px"
+        style={{ border: 'none', minHeight: '600px' }}
+        onLoad={handleLoad}
+        onError={handleError}
+        title="PDF Viewer"
+        className="w-full"
+      />
+      
+      <div className="p-2 bg-muted/30 text-center">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => window.open(fileUrl, '_blank')}
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Open in Full Screen
+        </Button>
+      </div>
     </div>
   );
 };
