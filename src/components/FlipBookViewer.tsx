@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { BookOpen, AlertCircle, ExternalLink, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -29,10 +30,16 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
   const [loadingMessage, setLoadingMessage] = useState('Initializing...');
 
   console.log('FlipBookViewer - Rendering with fileUrl:', fileUrl);
+  console.log('FlipBookViewer - flipbookRef.current:', flipbookRef.current);
 
   useEffect(() => {
-    if (!fileUrl || !flipbookRef.current) {
-      console.log('No fileUrl or flipbookRef, skipping initialization');
+    console.log('FlipBookViewer useEffect triggered');
+    console.log('fileUrl:', fileUrl);
+    console.log('flipbookRef.current:', flipbookRef.current);
+    
+    if (!fileUrl) {
+      console.log('No fileUrl provided');
+      setIsLoading(false);
       return;
     }
 
@@ -106,7 +113,7 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
           setLoadingMessage('Initializing Turn.js...');
 
           // Wait a moment for DOM to be ready
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 200));
 
           console.log('Initializing Turn.js with jQuery:', typeof window.$);
           
@@ -149,8 +156,21 @@ const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
       }
     };
 
-    // Small delay to ensure DOM is ready
-    const timeoutId = setTimeout(initializeFlipBook, 200);
+    // Small delay to ensure DOM is ready, then initialize
+    const timeoutId = setTimeout(() => {
+      if (flipbookRef.current) {
+        console.log('DOM is ready, starting initialization');
+        initializeFlipBook();
+      } else {
+        console.log('flipbookRef.current is null, waiting...');
+        // Try again after a longer delay
+        setTimeout(() => {
+          if (flipbookRef.current) {
+            initializeFlipBook();
+          }
+        }, 500);
+      }
+    }, 100);
 
     return () => {
       clearTimeout(timeoutId);
