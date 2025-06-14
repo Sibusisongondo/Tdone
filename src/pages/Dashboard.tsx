@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, LogOut, FileText, Trash2, Calendar, Users, Download, Eye } from "lucide-react";
+import { LogOut, FileText, Trash2, Calendar, Users, Download, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -147,9 +147,9 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" onClick={() => navigate('/')}>
-                <BookOpen className="h-8 w-8 text-primary mr-2" />
-                <h1 className="text-2xl font-bold text-primary">ThizaGraphix</h1>
+              <Button variant="ghost" onClick={() => navigate('/')} className="flex items-center space-x-2 sm:space-x-3">
+                <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-6 w-6 sm:h-8 sm:w-8" />
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">Be Inspired</h1>
               </Button>
             </div>
             <div className="flex items-center space-x-4">
@@ -219,7 +219,7 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle>My Magazines</CardTitle>
             <CardDescription>
-              All magazines you've uploaded to ThizaGraphix
+              All magazines you've uploaded to Be Inspired
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -248,7 +248,7 @@ const Dashboard = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <BookOpen className="h-12 w-12 text-muted-foreground" />
+                        <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-12 w-12 text-muted-foreground" />
                       )}
                     </div>
                     <CardHeader>
