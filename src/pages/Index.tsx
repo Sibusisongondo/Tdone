@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -155,7 +156,7 @@ const Index = () => {
       <header className="glass sticky top-0 z-50 border-b border-border/50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <div className="relative">
                 <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-10 w-10 animate-float" />
                 <Sparkles className="h-4 w-4 text-primary/60 absolute -top-1 -right-1 animate-pulse" />
@@ -364,7 +365,7 @@ const Index = () => {
       {/* Modern Footer */}
       <footer className="glass border-t border-border/50 py-8 sm:py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
+          <div className="flex items-center justify-center space-x-3 mb-4">
             <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-8 w-8" />
             <span className="text-lg font-semibold text-primary">Be Inspired</span>
           </div>
