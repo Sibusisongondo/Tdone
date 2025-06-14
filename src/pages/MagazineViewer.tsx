@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,8 +14,15 @@ import MagazineInfo from "@/components/MagazineInfo";
 import PDFControls from "@/components/PDFControls";
 import PDFViewer from "@/components/PDFViewer";
 
-// Set up PDF.js worker with more robust configuration
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+// Set up PDF.js worker with CDN fallback
+if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+}
+
+// Configure PDF.js for better compatibility
+pdfjs.disableWorker = false;
+pdfjs.disableAutoFetch = false;
+pdfjs.disableStream = false;
 
 const MagazineViewer = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,28 +39,41 @@ const MagazineViewer = () => {
   console.log('MagazineViewer - Worker source:', pdfjs.GlobalWorkerOptions.workerSrc);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    console.log('Document loaded successfully with', numPages, 'pages');
+    console.log('✅ Document loaded successfully with', numPages, 'pages');
     setNumPages(numPages);
     setPageNumber(1);
     toast({
-      title: "PDF Loaded",
-      description: `Successfully loaded ${numPages} pages`,
+      title: "PDF Loaded Successfully",
+      description: `Document loaded with ${numPages} pages`,
     });
   };
 
   const onDocumentLoadError = (error: Error) => {
-    console.error('Document load error in MagazineViewer:', error);
+    console.error('❌ Document load error in MagazineViewer:', error);
     console.error('Error details:', {
       message: error.message,
       stack: error.stack,
       magazineId: id,
       fileUrl: magazine?.file_url,
-      userAgent: navigator.userAgent
+      userAgent: navigator.userAgent,
+      pdfJsVersion: pdfjs.version,
+      workerSrc: pdfjs.GlobalWorkerOptions.workerSrc
     });
+    
+    // More specific error handling
+    let errorMessage = "Unable to load the PDF document.";
+    
+    if (error.message.includes('CORS')) {
+      errorMessage = "CORS error: The PDF file cannot be loaded due to cross-origin restrictions.";
+    } else if (error.message.includes('PDF')) {
+      errorMessage = "Invalid PDF file or corrupted document.";
+    } else if (error.message.includes('network') || error.message.includes('fetch')) {
+      errorMessage = "Network error: Cannot fetch the PDF file.";
+    }
     
     toast({
       title: "PDF Loading Error",
-      description: "Unable to load the PDF document. This might be due to CORS restrictions or file format issues.",
+      description: errorMessage,
       variant: "destructive",
     });
   };

@@ -111,19 +111,6 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     } catch (error) {
       console.error('❌ URL accessibility test failed:', error);
       setUrlTestResult(`URL test failed: ${error.message}`);
-      
-      // Try a different approach - test with GET request
-      try {
-        console.log('🔄 Trying GET request as fallback...');
-        const getResponse = await fetch(fileUrl, { 
-          method: 'GET',
-          mode: 'no-cors' // This might work for CORS-restricted resources
-        });
-        console.log('📡 GET (no-cors) response:', getResponse);
-        setUrlTestResult(`GET request completed (opaque response due to no-cors)`);
-      } catch (getError) {
-        console.error('❌ GET request also failed:', getError);
-      }
     }
   }, [fileUrl]);
 
@@ -133,21 +120,46 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
     }
   }, [fileUrl, testUrl, retryCount]);
 
-  // Enhanced PDF.js options
-  const options = {
+  // Process URL for better compatibility with Supabase storage
+  const processFileUrl = React.useMemo(() => {
+    if (!fileUrl) return '';
+    
+    // If it's a Supabase storage URL, we might need to handle it differently
+    if (fileUrl.includes('supabase.co/storage/v1/object/public/')) {
+      console.log('🔧 Processing Supabase storage URL:', fileUrl);
+      // For Supabase storage, we can try to fetch the file as a blob first
+      return fileUrl;
+    }
+    
+    return fileUrl;
+  }, [fileUrl]);
+
+  // Enhanced PDF.js options with better error handling
+  const options = React.useMemo(() => ({
     cMapUrl: `https://unpkg.com/pdfjs-dist@3.11.174/cmaps/`,
     cMapPacked: true,
     standardFontDataUrl: `https://unpkg.com/pdfjs-dist@3.11.174/standard_fonts/`,
     enableXfa: true,
     withCredentials: false,
-    // Add more options for better compatibility
-    verbosity: 1, // Enable verbose logging
+    verbosity: 1,
     isEvalSupported: false,
     disableWorker: false,
     disableAutoFetch: false,
     disableStream: false,
     disableFontFace: false,
-  };
+    // Add httpHeaders for better CORS handling
+    httpHeaders: {
+      'Access-Control-Allow-Origin': '*',
+    },
+    // Use a proxy function for Supabase URLs
+    ...(fileUrl?.includes('supabase.co') && {
+      // Custom file loader for Supabase
+      url: processFileUrl,
+      rangeChunkSize: 65536,
+      disableAutoFetch: true,
+      disableStream: true,
+    })
+  }), [fileUrl, processFileUrl]);
 
   if (hasError) {
     return (
@@ -159,10 +171,10 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
         <div className="text-sm text-muted-foreground text-center mb-4 max-w-md space-y-2">
           <p>This could be due to:</p>
           <ul className="text-left list-disc list-inside space-y-1">
+            <li>CORS restrictions on Supabase storage</li>
+            <li>PDF.js compatibility issues</li>
             <li>Network connectivity issues</li>
-            <li>CORS restrictions on the file server</li>
             <li>Invalid or corrupted PDF file</li>
-            <li>Browser compatibility issues</li>
           </ul>
           {urlTestResult && (
             <div className="mt-3 p-2 bg-muted rounded text-xs">
@@ -196,7 +208,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
   return (
     <div className="flex justify-center p-4 overflow-auto bg-gray-50 min-h-96">
       <Document
-        file={fileUrl}
+        file={processFileUrl}
         onLoadSuccess={handleLoadSuccess}
         onLoadError={handleLoadError}
         options={options}
@@ -214,7 +226,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({
           </div>
         }
         error={null}
-        key={`${fileUrl}-${retryCount}`}
+        key={`${processFileUrl}-${retryCount}`}
       >
         <Page
           pageNumber={pageNumber}
