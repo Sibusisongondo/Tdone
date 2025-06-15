@@ -59,7 +59,7 @@ const Index = () => {
           user_id,
           is_downloadable,
           is_readable_online,
-          profiles (
+          profiles!magazines_user_id_fkey (
             artist_name
           )
         `)
@@ -298,7 +298,7 @@ const Index = () => {
                         onClick={() => navigateToArtist(magazine.user_id)}
                         className="text-xs text-muted-foreground hover:text-primary transition-colors truncate max-w-20 sm:max-w-none"
                       >
-                        by {magazine.profiles?.artist_name || 'Artist'}
+                        by {magazine.profiles?.artist_name || 'Unknown Artist'}
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-1 sm:gap-2">
