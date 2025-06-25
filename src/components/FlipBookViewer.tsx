@@ -1,330 +1,427 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { BookOpen, AlertCircle, ExternalLink, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { 
+  BookOpen, 
+  AlertCircle, 
+  ChevronLeft, 
+  ChevronRight, 
+  ZoomIn, 
+  ZoomOut, 
+  RotateCcw,
+  Loader2,
+  Smartphone,
+  Monitor
+} from 'lucide-react';
 
-declare global {
-  interface Window {
-    $: any;
-    jQuery: any;
-  }
-}
+// Use CDN worker URL
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 interface FlipBookViewerProps {
   fileUrl: string;
-  onLoadSuccess?: ({ numPages }: { numPages: number }) => void;
-  onLoadError?: (error: Error) => void;
 }
 
-const FlipBookViewer: React.FC<FlipBookViewerProps> = ({
-  fileUrl,
-  onLoadSuccess,
-  onLoadError
-}) => {
-  const flipbookRef = useRef<HTMLDivElement>(null);
-  const [hasError, setHasError] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [numPages, setNumPages] = useState(0);
+const FlipBookViewer: React.FC<FlipBookViewerProps> = ({ fileUrl }) => {
+  const [numPages, setNumPages] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [scale, setScale] = useState(1);
-  const [loadingMessage, setLoadingMessage] = useState('Initializing...');
+  const [scale, setScale] = useState(1.0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [flipDirection, setFlipDirection] = useState<'next' | 'prev' | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
 
-  console.log('FlipBookViewer - Rendering with fileUrl:', fileUrl);
-  console.log('FlipBookViewer - flipbookRef.current:', flipbookRef.current);
-
+  // Detect mobile device
   useEffect(() => {
-    console.log('FlipBookViewer useEffect triggered');
-    console.log('fileUrl:', fileUrl);
-    console.log('flipbookRef.current:', flipbookRef.current);
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const documentOptions = React.useMemo(() => ({
+    cMapUrl: `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/cmaps/`,
+    cMapPacked: true,
+  }), []);
+
+  const onDocumentLoadSuccess = ({ numPages: nextNumPages }: { numPages: number }) => {
+    setNumPages(nextNumPages);
+    setLoading(false);
+    setError(null);
+    console.log('✅ PDF loaded successfully:', nextNumPages, 'pages');
+  };
+
+  const onDocumentLoadError = (error: Error) => {
+    console.error('❌ PDF load error:', error);
+    setLoading(false);
+    setError(`Failed to load PDF: ${error.message}`);
+  };
+
+  const onDocumentLoadStart = () => {
+    setLoading(true);
+    setError(null);
+  };
+
+  const performPageFlip = (direction: 'next' | 'prev') => {
+    if (isFlipping) return;
     
-    if (!fileUrl) {
-      console.log('No fileUrl provided');
-      setIsLoading(false);
-      return;
-    }
-
-    const initializeFlipBook = async () => {
-      try {
-        console.log('Starting FlipBook initialization...');
-        setIsLoading(true);
-        setHasError(false);
-        setLoadingMessage('Loading jQuery...');
-
-        // Load jQuery if not present
-        if (typeof window.$ === 'undefined') {
-          console.log('Loading jQuery...');
-          await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js');
-          console.log('✅ jQuery loaded');
-        } else {
-          console.log('jQuery already available');
-        }
-
-        setLoadingMessage('Loading Turn.js...');
-
-        // Load Turn.js if not present
-        if (!window.$.fn || !window.$.fn.turn) {
-          console.log('Loading Turn.js...');
-          await loadScript('https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js');
-          console.log('✅ Turn.js loaded');
-        } else {
-          console.log('Turn.js already available');
-        }
-
-        setLoadingMessage('Creating flipbook pages...');
-
-        // Create demo pages
-        const demoPages = 10;
-        setNumPages(demoPages);
-
-        if (flipbookRef.current) {
-          // Clear existing content
-          flipbookRef.current.innerHTML = '';
-          
-          // Create pages
-          for (let i = 1; i <= demoPages; i++) {
-            const page = document.createElement('div');
-            page.className = 'page';
-            page.style.cssText = `
-              width: 400px;
-              height: 300px;
-              background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-family: system-ui, -apple-system, sans-serif;
-              color: #334155;
-              border: 1px solid #cbd5e1;
-              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-              position: relative;
-            `;
-            
-            page.innerHTML = `
-              <div style="text-align: center; padding: 20px;">
-                <div style="font-size: 32px; margin-bottom: 15px;">📖</div>
-                <div style="font-weight: 600; font-size: 18px; margin-bottom: 8px;">Page ${i}</div>
-                <div style="font-size: 12px; opacity: 0.7; margin-bottom: 15px;">Demo Magazine Content</div>
-                <div style="font-size: 10px; opacity: 0.5; position: absolute; bottom: 8px; right: 12px;">${i}</div>
-              </div>
-            `;
-            
-            flipbookRef.current.appendChild(page);
-          }
-
-          setLoadingMessage('Initializing Turn.js...');
-
-          // Wait a moment for DOM to be ready
-          await new Promise(resolve => setTimeout(resolve, 200));
-
-          console.log('Initializing Turn.js with jQuery:', typeof window.$);
-          
-          // Initialize Turn.js
-          window.$(flipbookRef.current).turn({
-            width: 800,
-            height: 300,
-            autoCenter: true,
-            gradients: true,
-            elevation: 50,
-            display: 'double',
-            when: {
-              turned: function(event: any, page: number) {
-                console.log('Page turned to:', page);
-                setCurrentPage(page);
-              },
-              start: function() {
-                console.log('Turn.js initialization complete');
-              }
-            }
-          });
-
-          console.log('✅ FlipBook initialized successfully');
-          setIsLoading(false);
-          
-          if (onLoadSuccess) {
-            onLoadSuccess({ numPages: demoPages });
-          }
-        }
-
-      } catch (error) {
-        console.error('❌ FlipBook initialization error:', error);
-        setHasError(true);
-        setIsLoading(false);
-        setLoadingMessage('Failed to load');
-        
-        if (onLoadError) {
-          onLoadError(error as Error);
-        }
-      }
-    };
-
-    // Small delay to ensure DOM is ready, then initialize
-    const timeoutId = setTimeout(() => {
-      if (flipbookRef.current) {
-        console.log('DOM is ready, starting initialization');
-        initializeFlipBook();
-      } else {
-        console.log('flipbookRef.current is null, waiting...');
-        // Try again after a longer delay
-        setTimeout(() => {
-          if (flipbookRef.current) {
-            initializeFlipBook();
-          }
-        }, 500);
-      }
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      if (flipbookRef.current && window.$ && window.$.fn && window.$.fn.turn) {
-        try {
-          window.$(flipbookRef.current).turn('destroy');
-        } catch (e) {
-          console.warn('Cleanup warning:', e);
-        }
-      }
-    };
-  }, [fileUrl, onLoadSuccess, onLoadError]);
-
-  // Helper function to load scripts
-  const loadScript = (src: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = src;
-      script.crossOrigin = 'anonymous';
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load ${src}`));
-      document.head.appendChild(script);
-    });
-  };
-
-  useEffect(() => {
-    // Update scale when it changes
-    if (flipbookRef.current && window.$ && !isLoading) {
-      window.$(flipbookRef.current).css({
-        transform: `scale(${scale})`,
-        transformOrigin: 'center top'
-      });
-    }
-  }, [scale, isLoading]);
-
-  const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.2, 2));
-  };
-
-  const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.2, 0.5));
-  };
-
-  const handleResetZoom = () => {
-    setScale(1);
+    const targetPage = direction === 'next' ? currentPage + 1 : currentPage - 1;
+    if (targetPage < 1 || targetPage > (numPages || 0)) return;
+    
+    setIsFlipping(true);
+    setFlipDirection(direction);
+    
+    // Simple page change with animation
+    setTimeout(() => {
+      setCurrentPage(targetPage);
+      
+      // Complete the animation
+      setTimeout(() => {
+        setIsFlipping(false);
+        setFlipDirection(null);
+      }, 600);
+    }, 300);
   };
 
   const goToNextPage = () => {
-    if (flipbookRef.current && window.$ && window.$.fn.turn) {
-      window.$(flipbookRef.current).turn('next');
+    if (currentPage < (numPages || 0)) {
+      performPageFlip('next');
     }
   };
 
   const goToPrevPage = () => {
-    if (flipbookRef.current && window.$ && window.$.fn.turn) {
-      window.$(flipbookRef.current).turn('previous');
+    if (currentPage > 1) {
+      performPageFlip('prev');
+    }
+  };
+
+  // Touch handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartX.current) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchStartX.current - touchEndX;
+    const deltaY = touchStartY.current - touchEndY;
+
+    // Only trigger if horizontal swipe is more significant than vertical
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      if (deltaX > 0) {
+        // Swipe left - next page
+        goToNextPage();
+      } else {
+        // Swipe right - previous page
+        goToPrevPage();
+      }
+    }
+
+    touchStartX.current = 0;
+    touchStartY.current = 0;
+  };
+
+  // Click handlers for desktop (left/right side clicking)
+  const handlePageClick = (e: React.MouseEvent) => {
+    if (isMobile || isFlipping) return;
+    
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const clickX = e.clientX - rect.left;
+    const containerWidth = rect.width;
+    
+    if (clickX < containerWidth / 2) {
+      goToPrevPage();
+    } else {
+      goToNextPage();
+    }
+  };
+
+  const handleZoomIn = () => {
+    setScale((prevScale) => Math.min(prevScale + 0.2, 3.0));
+  };
+
+  const handleZoomOut = () => {
+    setScale((prevScale) => Math.max(prevScale - 0.2, 0.5));
+  };
+
+  const handleReset = () => {
+    setScale(1.0);
+    setCurrentPage(1);
+  };
+
+  const handlePageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const pageNum = parseInt(e.target.value);
+    if (pageNum >= 1 && pageNum <= (numPages || 0)) {
+      setCurrentPage(pageNum);
     }
   };
 
   if (!fileUrl) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
         <div className="text-center">
-          <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No file available for flipbook.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (hasError) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96 p-8">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h3 className="text-lg font-semibold text-destructive text-center mb-2">
-          Failed to load flipbook
-        </h3>
-        <p className="text-sm text-muted-foreground text-center mb-4">
-          Could not initialize the flipbook viewer. Try refreshing the page.
-        </p>
-        <Button 
-          variant="outline"
-          onClick={() => window.open(fileUrl, '_blank')}
-        >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Open Original File
-        </Button>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <BookOpen className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
-          <p className="text-muted-foreground">{loadingMessage}</p>
-          <div className="mt-2 text-xs text-muted-foreground opacity-70">
-            Setting up flipbook viewer...
-          </div>
+          <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">No file available for this magazine.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-white">
+    <div className="w-full bg-white border rounded-lg overflow-hidden shadow-sm">
       {/* Controls */}
-      <div className="flex items-center justify-between p-4 border-b bg-muted/30">
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={goToPrevPage} disabled={currentPage <= 1}>
-            ← Previous
-          </Button>
-          <span className="text-sm text-muted-foreground px-4">
-            Page {currentPage} of {numPages}
-          </span>
-          <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage >= numPages}>
-            Next →
-          </Button>
+      <div className="flex items-center justify-between p-3 border-b bg-gray-50 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goToPrevPage}
+            disabled={currentPage <= 1 || isFlipping}
+            className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Prev
+          </button>
+          
+          <div className="flex items-center gap-2 text-sm">
+            <input
+              type="number"
+              value={currentPage}
+              onChange={handlePageInputChange}
+              min={1}
+              max={numPages || 1}
+              className="w-16 px-2 py-1 text-center border rounded"
+            />
+            <span className="text-gray-600">of {numPages || '?'}</span>
+          </div>
+          
+          <button
+            onClick={goToNextPage}
+            disabled={currentPage >= (numPages || 0) || isFlipping}
+            className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handleZoomOut}>
+
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
+            {isMobile ? (
+              <>
+                <Smartphone className="h-3 w-3" />
+                <span>Swipe to flip</span>
+              </>
+            ) : (
+              <>
+                <Monitor className="h-3 w-3" />
+                <span>Click sides to flip</span>
+              </>
+            )}
+          </div>
+          
+          <div className="w-px h-4 bg-gray-300"></div>
+          
+          <button
+            onClick={handleZoomOut}
+            className="flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+          >
             <ZoomOut className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleResetZoom}>
+          </button>
+          
+          <span className="text-sm text-gray-600 min-w-16 text-center">
             {Math.round(scale * 100)}%
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleZoomIn}>
+          </span>
+          
+          <button
+            onClick={handleZoomIn}
+            className="flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+          >
             <ZoomIn className="h-4 w-4" />
-          </Button>
+          </button>
+          
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-1 px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Reset
+          </button>
         </div>
       </div>
 
-      {/* FlipBook Container */}
-      <div className="flex justify-center p-8 bg-gray-50 min-h-[400px]">
-        <div 
-          ref={flipbookRef}
-          id="flipbook"
-          className="flipbook"
-          style={{
-            transform: `scale(${scale})`,
-            transformOrigin: 'center top',
-            transition: 'transform 0.3s ease'
-          }}
-        />
+      {/* PDF Viewer with Simplified Animation */}
+      <div 
+        ref={containerRef}
+        className="relative flex justify-center p-4 bg-gradient-to-b from-gray-50 to-gray-100 min-h-[70vh] overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onClick={handlePageClick}
+        style={{ cursor: isMobile ? 'default' : 'pointer' }}
+      >
+        {/* Book Base Shadow */}
+        <div className="absolute top-6 left-6 right-6 bottom-2 bg-black opacity-5 blur-sm transform translate-y-2 rounded-lg"></div>
+        
+        <Document
+          file={fileUrl}
+          onLoadSuccess={onDocumentLoadSuccess}
+          onLoadError={onDocumentLoadError}
+          onLoadStart={onDocumentLoadStart}
+          options={documentOptions}
+          loading={
+            <div className="flex items-center justify-center h-full py-20">
+              <div className="text-center">
+                <Loader2 className="h-12 w-12 text-blue-500 mx-auto mb-4 animate-spin" />
+                <p className="text-gray-600">Loading magazine...</p>
+              </div>
+            </div>
+          }
+          error={
+            <div className="flex flex-col items-center justify-center h-full p-8">
+              <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+              <h3 className="text-lg font-semibold text-red-600 text-center mb-2">
+                Failed to load magazine
+              </h3>
+              <p className="text-gray-600 text-center mb-4 max-w-md">
+                {error || 'The PDF file could not be loaded. Please check if the file exists and is accessible.'}
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          }
+        >
+          {numPages && (
+            <div className="relative">
+              {/* Single Page with Animation */}
+              <div 
+                className={`
+                  page-container
+                  ${isFlipping ? 'flipping' : ''}
+                  ${flipDirection === 'next' ? 'flip-next' : ''}
+                  ${flipDirection === 'prev' ? 'flip-prev' : ''}
+                `}
+              >
+                <Page 
+                  pageNumber={currentPage} 
+                  scale={scale}
+                  className="pdf-page"
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                />
+              </div>
+            </div>
+          )}
+        </Document>
+
+        {/* Click zones for desktop */}
+        {!isMobile && (
+          <>
+            <div className="absolute left-0 top-0 w-1/2 h-full z-20 cursor-w-resize opacity-0 hover:bg-blue-100 hover:opacity-5 transition-opacity"></div>
+            <div className="absolute right-0 top-0 w-1/2 h-full z-20 cursor-e-resize opacity-0 hover:bg-blue-100 hover:opacity-5 transition-opacity"></div>
+          </>
+        )}
       </div>
 
-      <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-        <p className="text-sm text-muted-foreground text-center">
-          📖 Click on page corners to flip pages, or use the navigation controls above. 
-          This demo shows the flipbook functionality - in production, actual PDF pages would be displayed.
-        </p>
-      </div>
+      {/* Status Bar */}
+      {(loading || error) && (
+        <div className="px-4 py-2 bg-gray-50 border-t text-sm">
+          {loading && (
+            <div className="flex items-center gap-2 text-blue-600">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading PDF...
+            </div>
+          )}
+          {error && (
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-4 w-4" />
+              {error}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Simplified CSS for Clean Animation */}
+      <style jsx>{`
+        .page-container {
+          position: relative;
+          transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          transform-origin: center center;
+        }
+        
+        .pdf-page {
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1);
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid #e5e5e5;
+          background: white;
+          transition: all 0.3s ease;
+        }
+        
+        .page-container.flipping {
+          opacity: 0.7;
+          transform: scale(0.95);
+        }
+        
+        .page-container.flipping.flip-next {
+          transform: scale(0.95) rotateY(-5deg);
+        }
+        
+        .page-container.flipping.flip-prev {
+          transform: scale(0.95) rotateY(5deg);
+        }
+        
+        /* Enhanced hover effect */
+        .page-container:hover .pdf-page {
+          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2), 0 6px 15px rgba(0, 0, 0, 0.12);
+          transform: translateY(-2px);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+          .pdf-page {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+          }
+          
+          .page-container {
+            transition: all 0.4s ease-in-out;
+          }
+          
+          .page-container.flipping {
+            transform: scale(0.98);
+          }
+        }
+        
+        /* Page loading state */
+        .page-container:not(.flipping) {
+          animation: page-appear 0.5s ease-out;
+        }
+        
+        @keyframes page-appear {
+          from {
+            opacity: 0;
+            transform: scale(0.98) translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };
