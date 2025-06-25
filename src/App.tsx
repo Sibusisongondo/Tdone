@@ -13,6 +13,7 @@ import Magazines from "./pages/Magazines";
 import MagazineViewer from "./pages/MagazineViewer";
 import ArtistProfile from "./pages/ArtistProfile";
 import NotFound from "./pages/NotFound";
+import { SpeedInsights } from "@vercel/speed-insights/react"
 
 const queryClient = new QueryClient();
 
