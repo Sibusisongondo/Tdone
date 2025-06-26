@@ -21,9 +21,7 @@ interface Magazine {
   user_id: string;
   is_downloadable: boolean | null;
   is_readable_online: boolean | null;
-  profiles?: {
-    artist_name: string | null;
-  } | null;
+  artist_name?: string | null;
 }
 
 const Index = () => {
@@ -44,7 +42,10 @@ const Index = () => {
 
   const fetchMagazines = async () => {
     try {
-      const { data, error } = await supabase
+      console.log('Starting to fetch magazines...');
+      
+      // First fetch magazines
+      const { data: magazinesData, error: magazinesError } = await supabase
         .from('magazines')
         .select(`
           id,
@@ -58,22 +59,59 @@ const Index = () => {
           created_at,
           user_id,
           is_downloadable,
-          is_readable_online,
-          profiles!magazines_user_id_fkey (
-            artist_name
-          )
+          is_readable_online
         `)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
+      if (magazinesError) {
+        console.error('Error fetching magazines:', magazinesError);
+        throw magazinesError;
       }
 
-      console.log('Fetched magazines:', data);
-      setMagazines(data as Magazine[] || []);
+      console.log('Magazines fetched:', magazinesData?.length || 0);
+
+      if (!magazinesData || magazinesData.length === 0) {
+        setMagazines([]);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(magazinesData.map(mag => mag.user_id))];
+      console.log('Unique user IDs:', userIds);
+
+      // Fetch all profiles at once
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, artist_name')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        // Continue without artist names rather than failing completely
+      }
+
+      console.log('Profiles fetched:', profilesData?.length || 0);
+
+      // Create a map of user_id to artist_name for quick lookup
+      const artistNameMap = new Map();
+      if (profilesData) {
+        profilesData.forEach(profile => {
+          artistNameMap.set(profile.id, profile.artist_name);
+        });
+      }
+
+      // Combine magazines with artist names
+      const magazinesWithArtists = magazinesData.map(magazine => ({
+        ...magazine,
+        artist_name: artistNameMap.get(magazine.user_id) || null
+      }));
+
+      console.log('Final magazines with artists:', magazinesWithArtists.map(m => ({ title: m.title, artist: m.artist_name })));
+      
+      setMagazines(magazinesWithArtists);
+
     } catch (error) {
-      console.error('Error fetching magazines:', error);
+      console.error('Error in fetchMagazines:', error);
       toast({
         title: "Error",
         description: "Failed to load magazines.",
@@ -297,8 +335,9 @@ const Index = () => {
                       <button 
                         onClick={() => navigateToArtist(magazine.user_id)}
                         className="text-xs text-muted-foreground hover:text-primary transition-colors truncate max-w-20 sm:max-w-none"
+                        title={magazine.artist_name || 'Unknown Artist'}
                       >
-                        by {magazine.profiles?.artist_name || 'Unknown Artist'}
+                        by {magazine.artist_name || 'Unknown Artist'}
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-1 sm:gap-2">

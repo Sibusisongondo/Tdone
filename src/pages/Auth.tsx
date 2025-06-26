@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,16 +32,38 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      await signIn(signInData.email, signInData.password);
-      toast({
-        title: "Success",
-        description: "Signed in successfully!",
-      });
-      navigate('/dashboard');
+      const { error } = await signIn(signInData.email, signInData.password);
+      
+      if (error) {
+        // Handle specific error types with user-friendly messages
+        let errorMessage = "Failed to sign in";
+        
+        if (error.message?.includes("Invalid login credentials")) {
+          errorMessage = "Invalid email or password. Please check your credentials and try again.";
+        } else if (error.message?.includes("Email not confirmed")) {
+          errorMessage = "Please check your email and click the confirmation link before signing in.";
+        } else if (error.message?.includes("Too many requests")) {
+          errorMessage = "Too many login attempts. Please wait a moment and try again.";
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        toast({
+          title: "Sign In Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Signed in successfully!",
+        });
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to sign in",
+        description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -55,12 +76,24 @@ const Auth = () => {
     setIsLoading(true);
     
     try {
-      await signUp(signUpData.email, signUpData.password, signUpData.fullName, signUpData.artistName);
-      toast({
-        title: "Success",
-        description: "Account created successfully! Please check your email to verify your account.",
-      });
-      navigate('/dashboard');
+      const { error } = await signUp(signUpData.email, signUpData.password, signUpData.fullName, signUpData.artistName);
+      
+      if (error) {
+        toast({
+          title: "Signup Error",
+          description: error.message || "Failed to create account",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Account Created Successfully! 🎉",
+          description: "Please check your email inbox and click the confirmation link to verify your account before signing in.",
+        });
+        // Don't navigate to dashboard yet - user needs to verify email first
+        // Optionally switch to sign in tab
+        const signInTab = document.querySelector('[value="signin"]') as HTMLElement;
+        signInTab?.click();
+      }
     } catch (error: any) {
       toast({
         title: "Error",

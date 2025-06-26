@@ -37,10 +37,10 @@ const MagazineViewer = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <BookOpen className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
-          <p className="text-muted-foreground">Loading magazine...</p>
+          <BookOpen className="h-8 w-8 sm:h-12 sm:w-12 text-primary mx-auto mb-4 animate-pulse" />
+          <p className="text-muted-foreground text-sm sm:text-base">Loading magazine...</p>
         </div>
       </div>
     );
@@ -48,10 +48,10 @@ const MagazineViewer = () => {
 
   if (!magazine) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-muted-foreground">Magazine not found.</p>
-          <Button onClick={() => navigate('/')} className="mt-4">
+          <p className="text-muted-foreground text-sm sm:text-base">Magazine not found.</p>
+          <Button onClick={() => navigate('/')} className="mt-4" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Home
           </Button>
@@ -72,10 +72,14 @@ const MagazineViewer = () => {
     <div className="min-h-screen bg-background">
       <MagazineHeader onBackToHome={() => navigate('/')} />
 
-      <div className="container mx-auto px-4 py-6">
-        <MagazineInfo magazine={magazine} />
+      <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 max-w-7xl">
+        {/* Magazine Info - Responsive */}
+        <div className="mb-4 sm:mb-6">
+          <MagazineInfo magazine={magazine} />
+        </div>
 
-        <Card>
+        {/* FlipBook Viewer Card - Responsive */}
+        <Card className="w-full">
           <CardContent className="p-0">
             {magazine.file_url ? (
               <FlipBookViewer
@@ -84,11 +88,11 @@ const MagazineViewer = () => {
                 onLoadError={onDocumentLoadError}
               />
             ) : (
-              <div className="flex items-center justify-center h-96">
-                <div className="text-center">
-                  <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No file available for this magazine.</p>
-                  <p className="text-sm text-muted-foreground mt-2">
+              <div className="flex items-center justify-center h-64 sm:h-96">
+                <div className="text-center p-4">
+                  <BookOpen className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground text-sm sm:text-base">No file available for this magazine.</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-2">
                     Please contact support if you believe this is an error.
                   </p>
                 </div>
@@ -97,10 +101,16 @@ const MagazineViewer = () => {
           </CardContent>
         </Card>
 
-        <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-          <p className="text-sm text-muted-foreground text-center">
+        {/* Instructions - Responsive */}
+        <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-muted/30 rounded-lg">
+          <p className="text-xs sm:text-sm text-muted-foreground text-center">
             📖 This is a FlipBook viewer with realistic page-turning effects. 
-            Click on page corners to flip pages or use the navigation controls above.
+            <span className="hidden sm:inline">
+              Click on page corners to flip pages or use the navigation controls below.
+            </span>
+            <span className="sm:hidden">
+              Swipe to flip pages or use the controls below.
+            </span>
           </p>
         </div>
       </div>
