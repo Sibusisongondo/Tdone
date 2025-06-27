@@ -35,6 +35,10 @@ const MagazineViewer = () => {
     });
   }, [toast]);
 
+  const handleCloseViewer = () => {
+    navigate('/');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -68,6 +72,19 @@ const MagazineViewer = () => {
     is_readable_online: magazine.is_readable_online
   });
 
+  // If we have a file URL, show the fullscreen FlipBook immediately
+  if (magazine.file_url) {
+    return (
+      <FlipBookViewer
+        fileUrl={magazine.file_url}
+        onLoadSuccess={onDocumentLoadSuccess}
+        onLoadError={onDocumentLoadError}
+        onClose={handleCloseViewer}
+      />
+    );
+  }
+
+  // Fallback for when no file is available
   return (
     <div className="min-h-screen bg-background">
       <MagazineHeader onBackToHome={() => navigate('/')} />
@@ -78,41 +95,24 @@ const MagazineViewer = () => {
           <MagazineInfo magazine={magazine} />
         </div>
 
-        {/* FlipBook Viewer Card - Responsive */}
+        {/* No File Available Message */}
         <Card className="w-full">
           <CardContent className="p-0">
-            {magazine.file_url ? (
-              <FlipBookViewer
-                fileUrl={magazine.file_url}
-                onLoadSuccess={onDocumentLoadSuccess}
-                onLoadError={onDocumentLoadError}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-64 sm:h-96">
-                <div className="text-center p-4">
-                  <BookOpen className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground text-sm sm:text-base">No file available for this magazine.</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-2">
-                    Please contact support if you believe this is an error.
-                  </p>
-                </div>
+            <div className="flex items-center justify-center h-64 sm:h-96">
+              <div className="text-center p-4">
+                <BookOpen className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground text-sm sm:text-base">No file available for this magazine.</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+                  Please contact support if you believe this is an error.
+                </p>
+                <Button onClick={() => navigate('/')} className="mt-4" size="sm">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Home
+                </Button>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
-
-        {/* Instructions - Responsive */}
-        <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-muted/30 rounded-lg">
-          <p className="text-xs sm:text-sm text-muted-foreground text-center">
-            📖 This is a FlipBook viewer with realistic page-turning effects. 
-            <span className="hidden sm:inline">
-              Click on page corners to flip pages or use the navigation controls below.
-            </span>
-            <span className="sm:hidden">
-              Swipe to flip pages or use the controls below.
-            </span>
-          </p>
-        </div>
       </div>
     </div>
   );
