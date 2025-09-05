@@ -202,6 +202,12 @@ const Index = () => {
             </div>
             <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
               <ThemeToggle />
+              <Button variant="outline" size="sm" onClick={() => navigate('/about')} className="btn-modern text-xs sm:text-sm px-2 sm:px-3">
+                About
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/contact')} className="btn-modern text-xs sm:text-sm px-2 sm:px-3">
+                Contact
+              </Button>
               <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')} className="btn-modern text-xs sm:text-sm px-2 sm:px-3">
                 <span className="hidden sm:inline">Dashboard</span>
                 <span className="sm:hidden">Dash</span>
@@ -397,6 +403,35 @@ const Index = () => {
             <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-6 w-6 sm:h-8 sm:w-8" />
             <span className="text-base sm:text-lg font-semibold text-primary">Be Inspired</span>
           </div>
+          
+          {/* Footer Navigation */}
+          <div className="flex justify-center space-x-4 sm:space-x-6 mb-4">
+            <button 
+              onClick={() => navigate('/about')} 
+              className="text-muted-foreground hover:text-primary transition-colors text-sm sm:text-base"
+            >
+              About
+            </button>
+            <button 
+              onClick={() => navigate('/contact')} 
+              className="text-muted-foreground hover:text-primary transition-colors text-sm sm:text-base"
+            >
+              Contact
+            </button>
+            <button 
+              onClick={() => navigate('/magazines')} 
+              className="text-muted-foreground hover:text-primary transition-colors text-sm sm:text-base"
+            >
+              Magazines
+            </button>
+            <button 
+              onClick={() => navigate('/dashboard')} 
+              className="text-muted-foreground hover:text-primary transition-colors text-sm sm:text-base"
+            >
+              Dashboard
+            </button>
+          </div>
+          
           <p className="text-muted-foreground text-xs sm:text-sm">
             &copy; {new Date().getFullYear()} Be Inspired. All rights reserved.
           </p>

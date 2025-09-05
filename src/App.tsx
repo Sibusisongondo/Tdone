@@ -8,6 +8,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
 import Magazines from "./pages/Magazines";
 import MagazineViewer from "./pages/MagazineViewer";
@@ -33,6 +35,8 @@ const App = () => (
               <Route path="/magazine/:id" element={<MagazineViewer />} />
               <Route path="/artist/:artistId" element={<ArtistProfile />} />
               <Route path="/artist/:artistId/magazine/:magazineId" element={<ArtistProfile />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
