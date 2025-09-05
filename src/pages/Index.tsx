@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Download, Eye, Sparkles, Users, FolderOpen } from "lucide-react";
+import { BookOpen, Download, Eye, Sparkles, Users, FolderOpen, Menu, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -29,6 +29,7 @@ const Index = () => {
   const { toast } = useToast();
   const [magazines, setMagazines] = useState<Magazine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stats, setStats] = useState({
     totalMagazines: 0,
     registeredUsers: 0,
@@ -171,6 +172,15 @@ const Index = () => {
     }
   };
 
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    closeMobileMenu();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center p-4">
@@ -187,37 +197,114 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-      {/* Modern Header */}
+      {/* Improved Mobile-First Header */}
       <header className="glass sticky top-0 z-50 border-b border-border/50">
-        <div className="container mx-auto px-3 sm:px-4 lg:px-8 py-3 sm:py-4">
+        <div className="container mx-auto px-3 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Logo Section - Always visible */}
+            <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
               <div className="relative">
-                <img src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" alt="Be Inspired Logo" className="h-8 w-8 sm:h-10 sm:w-10 animate-float" />
-                <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-primary/60 absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 animate-pulse" />
+                <img 
+                  src="/lovable-uploads/db348a0f-07e7-4e82-971d-f8103cc16cb3.png" 
+                  alt="Be Inspired Logo" 
+                  className="h-8 w-8 animate-float cursor-pointer" 
+                  onClick={() => handleNavigation('/')}
+                />
+                <Sparkles className="h-3 w-3 text-primary/60 absolute -top-0.5 -right-0.5 animate-pulse" />
               </div>
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              <h1 
+                className="text-lg font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent cursor-pointer"
+                onClick={() => handleNavigation('/')}
+              >
                 Be Inspired
               </h1>
             </div>
-            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
+
+            {/* Desktop Navigation - Hidden on mobile */}
+            <div className="hidden md:flex items-center space-x-2">
               <ThemeToggle />
-              <Button variant="outline" size="sm" onClick={() => navigate('/about')} className="btn-modern text-xs sm:text-sm px-2 sm:px-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/about')} 
+                className="btn-modern text-sm px-3"
+              >
                 About
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/contact')} className="btn-modern text-xs sm:text-sm px-2 sm:px-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/contact')} 
+                className="btn-modern text-sm px-3"
+              >
                 Contact
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/dashboard')} className="btn-modern text-xs sm:text-sm px-2 sm:px-3">
-                <span className="hidden sm:inline">Dashboard</span>
-                <span className="sm:hidden">Dash</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/dashboard')} 
+                className="btn-modern text-sm px-3"
+              >
+                Dashboard
               </Button>
-              <Button onClick={() => navigate('/auth')} className="btn-modern bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-xs sm:text-sm px-2 sm:px-3">
-                <span className="hidden sm:inline">Sign Up</span>
-                <span className="sm:hidden">Sign Up</span>
+              <Button 
+                onClick={() => navigate('/auth')} 
+                className="btn-modern bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-sm px-3"
+              >
+                Sign Up
+              </Button>
+            </div>
+
+            {/* Mobile Menu Button - Only visible on mobile */}
+            <div className="flex md:hidden items-center space-x-2">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
             </div>
           </div>
+
+          {/* Mobile Menu - Dropdown */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-3 pt-3 border-t border-border/50 space-y-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => handleNavigation('/about')} 
+                className="w-full justify-start text-sm"
+              >
+                About
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => handleNavigation('/contact')} 
+                className="w-full justify-start text-sm"
+              >
+                Contact
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => handleNavigation('/dashboard')} 
+                className="w-full justify-start text-sm"
+              >
+                Dashboard
+              </Button>
+              <Button 
+                onClick={() => handleNavigation('/auth')} 
+                className="w-full btn-modern bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-sm mt-2"
+              >
+                Sign Up
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -354,8 +441,7 @@ const Index = () => {
                           onClick={() => handleMagazineAction(magazine)}
                         >
                           <Eye className="h-3 w-3 mr-1" />
-                          <span className="hidden xs:inline">Read</span>
-                          <span className="xs:hidden">Read</span>
+                          Read
                         </Button>
                       )}
                       <ShareButton 
